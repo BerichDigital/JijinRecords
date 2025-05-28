@@ -15,21 +15,31 @@ class CloudSync {
   private baseUrl = 'https://api.jsonbin.io/v3'
 
   constructor() {
-    // 从 localStorage 加载配置
-    this.loadConfig()
+    // 只在客户端加载配置
+    if (typeof window !== 'undefined') {
+      this.loadConfig()
+    }
   }
 
   // 设置云端同步配置
   setConfig(config: CloudSyncConfig) {
     this.config = config
-    localStorage.setItem('cloud-sync-config', JSON.stringify(config))
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cloud-sync-config', JSON.stringify(config))
+    }
   }
 
   // 从 localStorage 加载配置
   private loadConfig() {
-    const saved = localStorage.getItem('cloud-sync-config')
-    if (saved) {
-      this.config = JSON.parse(saved)
+    if (typeof window === 'undefined') return
+    
+    try {
+      const saved = localStorage.getItem('cloud-sync-config')
+      if (saved) {
+        this.config = JSON.parse(saved)
+      }
+    } catch (error) {
+      console.error('加载配置失败:', error)
     }
   }
 
@@ -156,7 +166,9 @@ class CloudSync {
   // 清除配置
   clearConfig() {
     this.config = null
-    localStorage.removeItem('cloud-sync-config')
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('cloud-sync-config')
+    }
   }
 
   // 获取当前配置状态

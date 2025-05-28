@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useFundStore } from '@/store/fund'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -29,6 +29,7 @@ interface TransactionFormData {
 }
 
 export default function FundRecordsPage() {
+	const [isHydrated, setIsHydrated] = useState(false)
 	const { 
 		transactions, 
 		holdings, 
@@ -42,6 +43,13 @@ export default function FundRecordsPage() {
 	const [editingFund, setEditingFund] = useState<string | null>(null)
 	const [newPrice, setNewPrice] = useState('')
 
+	// 处理客户端水合
+	useEffect(() => {
+		setIsHydrated(true)
+		// 手动触发 Zustand persist 的水合
+		useFundStore.persist.rehydrate()
+	}, [])
+
 	const form = useForm<TransactionFormData>({
 		defaultValues: {
 			fundCode: '',
@@ -54,6 +62,18 @@ export default function FundRecordsPage() {
 			fee: 0
 		}
 	})
+
+	// 在水合完成前显示加载状态
+	if (!isHydrated) {
+		return (
+			<div className="min-h-screen bg-gray-50 flex items-center justify-center">
+				<div className="text-center">
+					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+					<p className="text-gray-600">加载中...</p>
+				</div>
+			</div>
+		)
+	}
 
 	// 初始化示例数据
 	const initSampleData = () => {

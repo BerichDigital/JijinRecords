@@ -220,6 +220,7 @@ export const useFundStore = create<FundState>()(
     }),
     {
       name: 'fund-storage',
+      skipHydration: true, // 跳过服务器端水合，避免 SSR 问题
     }
   )
 ) 
