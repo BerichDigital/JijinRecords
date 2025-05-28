@@ -48,6 +48,90 @@ class CloudSync {
     return !!(this.config?.apiKey)
   }
 
+  // 生成基于API密钥的固定binId
+  private generateBinId(apiKey: string): string {
+    // 使用API密钥的一部分生成一致的binId
+    // 这确保所有使用相同API密钥的设备都会使用同一个binId
+    const hash = this.simpleHash(apiKey + 'jijin-records')
+    return hash.substring(0, 24) // JSONBin.io的binId长度通常是24位
+  }
+
+  // 简单的哈希函数
+  private simpleHash(str: string): string {
+    let hash = 0
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // 转换为32位整数
+    }
+    return Math.abs(hash).toString(16).padStart(24, '0')
+  }
+
+  // 确保bin存在，如果不存在则创建
+  private async ensureBinExists(): Promise<boolean> {
+    if (!this.config?.apiKey) {
+      return false
+    }
+
+    // 生成固定的binId
+    const binId = this.generateBinId(this.config.apiKey)
+    
+    try {
+      // 首先检查bin是否存在
+      const checkResponse = await fetch(`${this.baseUrl}/b/${binId}`, {
+        method: 'HEAD',
+        headers: {
+          'X-Master-Key': this.config.apiKey
+        }
+      })
+
+      if (checkResponse.ok) {
+        // bin存在，保存binId
+        this.config.binId = binId
+        this.setConfig(this.config)
+        return true
+      }
+
+      // bin不存在，创建新的bin
+      const createResponse = await fetch(`${this.baseUrl}/b`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': this.config.apiKey,
+          'X-Bin-Name': 'jijin-records-shared-data'
+        },
+        body: JSON.stringify({
+          _metadata: {
+            appName: "基金投资记录助手",
+            version: "1.0.0",
+            created: new Date().toISOString()
+          },
+          transactions: [],
+          holdings: [],
+          accountSummary: {
+            totalInvestment: 0,
+            totalValue: 0,
+            totalProfit: 0,
+            totalProfitRate: 0
+          },
+          fundPrices: {}
+        })
+      })
+
+      if (createResponse.ok) {
+        const result = await createResponse.json()
+        this.config.binId = result.metadata?.id || binId
+        this.setConfig(this.config)
+        return true
+      }
+
+      return false
+    } catch (error) {
+      console.error('确保bin存在失败:', error)
+      return false
+    }
+  }
+
   // 上传数据到云端
   async uploadData(data: FundData): Promise<boolean> {
     if (!this.config?.apiKey) {
@@ -55,35 +139,35 @@ class CloudSync {
     }
 
     try {
-      const url = this.config.binId 
-        ? `${this.baseUrl}/b/${this.config.binId}`
-        : `${this.baseUrl}/b`
+      // 确保bin存在
+      const binExists = await this.ensureBinExists()
+      if (!binExists || !this.config.binId) {
+        throw new Error('无法创建或访问数据存储')
+      }
 
-      const method = this.config.binId ? 'PUT' : 'POST'
+      const uploadData = {
+        _metadata: {
+          appName: "基金投资记录助手",
+          version: "1.0.0",
+          lastUpdated: new Date().toISOString(),
+          deviceInfo: {
+            userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'Unknown',
+            timestamp: Date.now()
+          }
+        },
+        ...data
+      }
 
-      const response = await fetch(url, {
-        method,
+      const response = await fetch(`${this.baseUrl}/b/${this.config.binId}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'X-Master-Key': this.config.apiKey,
-          'X-Bin-Name': 'jijin-records-data'
+          'X-Master-Key': this.config.apiKey
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(uploadData)
       })
 
-      if (response.ok) {
-        const result = await response.json()
-        
-        // 如果是首次创建，保存 bin ID
-        if (!this.config.binId && result.metadata?.id) {
-          this.config.binId = result.metadata.id
-          this.setConfig(this.config)
-        }
-        
-        return true
-      }
-      
-      return false
+      return response.ok
     } catch (error) {
       console.error('上传数据失败:', error)
       return false
@@ -92,11 +176,28 @@ class CloudSync {
 
   // 从云端下载数据
   async downloadData(): Promise<FundData | null> {
-    if (!this.config?.apiKey || !this.config?.binId) {
-      throw new Error('请先设置 API 密钥或尚未上传过数据')
+    if (!this.config?.apiKey) {
+      throw new Error('请先设置 API 密钥')
     }
 
     try {
+      // 确保bin存在
+      const binExists = await this.ensureBinExists()
+      if (!binExists || !this.config.binId) {
+        // 如果bin不存在，返回空数据
+        return {
+          transactions: [],
+          holdings: [],
+          accountSummary: {
+            totalInvestment: 0,
+            totalValue: 0,
+            totalProfit: 0,
+            totalProfitRate: 0
+          },
+          fundPrices: {}
+        }
+      }
+
       const response = await fetch(`${this.baseUrl}/b/${this.config.binId}/latest`, {
         headers: {
           'X-Master-Key': this.config.apiKey
@@ -105,7 +206,11 @@ class CloudSync {
 
       if (response.ok) {
         const result = await response.json()
-        return result.record
+        const data = result.record
+        
+        // 移除元数据，只返回基金数据
+        const { _metadata, ...fundData } = data
+        return fundData
       }
       
       return null
@@ -117,19 +222,13 @@ class CloudSync {
 
   // 检查云端是否有数据
   async hasCloudData(): Promise<boolean> {
-    if (!this.config?.apiKey || !this.config?.binId) {
+    if (!this.config?.apiKey) {
       return false
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/b/${this.config.binId}`, {
-        method: 'HEAD',
-        headers: {
-          'X-Master-Key': this.config.apiKey
-        }
-      })
-
-      return response.ok
+      const binExists = await this.ensureBinExists()
+      return binExists
     } catch (error) {
       return false
     }
@@ -137,11 +236,16 @@ class CloudSync {
 
   // 获取云端数据信息
   async getCloudDataInfo(): Promise<any> {
-    if (!this.config?.apiKey || !this.config?.binId) {
+    if (!this.config?.apiKey) {
       return null
     }
 
     try {
+      const binExists = await this.ensureBinExists()
+      if (!binExists || !this.config.binId) {
+        return null
+      }
+
       const response = await fetch(`${this.baseUrl}/b/${this.config.binId}`, {
         headers: {
           'X-Master-Key': this.config.apiKey
@@ -150,9 +254,13 @@ class CloudSync {
 
       if (response.ok) {
         const result = await response.json()
+        const metadata = result.record?._metadata
         return {
-          lastUpdated: result.metadata?.createdAt,
-          size: JSON.stringify(result.record).length
+          lastUpdated: metadata?.lastUpdated || result.metadata?.createdAt,
+          size: JSON.stringify(result.record).length,
+          binId: this.config.binId,
+          deviceInfo: metadata?.deviceInfo,
+          appVersion: metadata?.version
         }
       }
       

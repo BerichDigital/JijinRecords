@@ -50,19 +50,36 @@ export function CloudSync() {
       return
     }
 
-    const config: CloudSyncConfig = {
-      apiKey: apiKey.trim()
-    }
+    try {
+      const config: CloudSyncConfig = {
+        apiKey: apiKey.trim()
+      }
 
-    cloudSync.setConfig(config)
-    setIsConfigured(true)
-    setShowConfig(false)
-    toast.success('配置已保存！现在可以开始同步数据了')
-    
-    // 重新加载云端信息
-    setTimeout(() => {
-      loadCloudInfo()
-    }, 500)
+      cloudSync.setConfig(config)
+      setIsConfigured(true)
+      setShowConfig(false)
+      
+      // 测试连接
+      toast.loading('正在测试连接...', { id: 'test-connection' })
+      
+      const hasData = await cloudSync.hasCloudData()
+      
+      toast.dismiss('test-connection')
+      
+      if (hasData) {
+        toast.success('配置成功！检测到云端已有数据，可以下载同步')
+      } else {
+        toast.success('配置成功！云端暂无数据，可以上传本地数据')
+      }
+      
+      // 重新加载云端信息
+      setTimeout(() => {
+        loadCloudInfo()
+      }, 500)
+    } catch (error) {
+      console.error('配置失败:', error)
+      toast.error('配置失败，请检查 API 密钥是否正确')
+    }
   }
 
   const handleUpload = async () => {
