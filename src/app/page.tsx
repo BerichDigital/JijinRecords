@@ -15,7 +15,7 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Plus, TrendingUp, TrendingDown, DollarSign, PieChart, Trash2, Edit, Database } from 'lucide-react'
 import type { Transaction } from '@/store/fund'
-import { GoogleDriveSync } from '@/components/GoogleDriveSync'
+import { CloudSync } from '@/components/CloudSync'
 
 interface TransactionFormData {
 	fundCode: string
@@ -599,7 +599,7 @@ export default function FundRecordsPage() {
 					</TabsContent>
 					
 					<TabsContent value="sync" className="space-y-6">
-						<GoogleDriveSync />
+						<CloudSync />
 					</TabsContent>
 				</Tabs>
 			</div>

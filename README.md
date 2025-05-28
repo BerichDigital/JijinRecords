@@ -7,7 +7,7 @@
 - 📊 **投资概览**：查看总投入、当前市值、总盈亏和收益率
 - 💼 **持仓管理**：详细的基金持仓信息和实时盈亏计算
 - 📝 **交易记录**：完整的买入卖出交易历史
-- ☁️ **云端同步**：支持 Google Drive 数据同步，多设备访问
+- ☁️ **云端同步**：支持 JSONBin.io 免费云端数据同步，多设备访问
 - 🔄 **实时更新**：手动更新基金净值，获得准确的收益计算
 - 💾 **本地存储**：数据安全保存在浏览器本地
 
@@ -29,40 +29,33 @@ npm run dev
 
 打开浏览器访问 [http://localhost:3000](http://localhost:3000)
 
-## Google Drive 同步设置
+## 云端同步设置
 
-要使用 Google Drive 数据同步功能，您需要设置 Google Drive API：
+要使用云端数据同步功能，您需要获取免费的 JSONBin.io API 密钥：
 
-### 步骤 1：创建 Google Cloud 项目
+### 步骤 1：注册 JSONBin.io 账户
 
-1. 访问 [Google Cloud Console](https://console.cloud.google.com/)
-2. 创建新项目或选择现有项目
-3. 在项目中启用 Google Drive API
+1. 访问 [JSONBin.io](https://jsonbin.io)
+2. 点击 "Sign Up" 免费注册账户
+3. 验证邮箱并登录
 
-### 步骤 2：创建 API 凭据
+### 步骤 2：获取 API 密钥
 
-1. 在 Google Cloud Console 中，转到"API 和服务" > "凭据"
-2. 点击"创建凭据" > "API 密钥"
-3. 复制生成的 API 密钥
-4. 点击"创建凭据" > "OAuth 2.0 客户端 ID"
-5. 选择"Web 应用程序"
-6. 在"已获授权的 JavaScript 来源"中添加：
-   - `http://localhost:3000` (开发环境)
-   - 您的生产域名 (如果有)
-7. 复制生成的客户端 ID
+1. 登录后进入控制台
+2. 在左侧菜单中找到 "API Keys"
+3. 复制 "X-Master-Key" 密钥
 
 ### 步骤 3：配置应用
 
 1. 在应用中点击"数据同步"标签页
 2. 点击"配置 API"按钮
-3. 输入您的 Client ID 和 API Key
+3. 输入您的 API 密钥
 4. 保存配置
 
 ### 步骤 4：开始同步
 
-1. 点击"登录 Google"按钮
-2. 授权应用访问您的 Google Drive
-3. 使用"上传数据"和"下载数据"按钮进行同步
+1. 使用"上传数据"按钮将本地数据保存到云端
+2. 在其他设备上使用"下载数据"按钮获取最新数据
 
 ## 使用说明
 
@@ -80,8 +73,8 @@ npm run dev
 
 ### 数据同步
 
-- **上传数据**：将本地数据保存到 Google Drive
-- **下载数据**：从 Google Drive 获取最新数据
+- **上传数据**：将本地数据保存到云端
+- **下载数据**：从云端获取最新数据
 
 ## 技术栈
 
@@ -89,7 +82,7 @@ npm run dev
 - **UI 组件**：shadcn/ui + Tailwind CSS
 - **状态管理**：Zustand
 - **表单处理**：React Hook Form
-- **云端同步**：Google Drive API
+- **云端同步**：JSONBin.io API
 - **通知系统**：Sonner
 
 ## 项目结构
@@ -99,9 +92,9 @@ src/
 ├── app/                 # Next.js 应用页面
 ├── components/          # React 组件
 │   ├── ui/             # shadcn/ui 组件
-│   └── GoogleDriveSync.tsx  # Google Drive 同步组件
+│   └── CloudSync.tsx   # 云端同步组件
 ├── lib/                # 工具库
-│   └── google-drive-sync.ts # Google Drive API 封装
+│   └── cloud-sync.ts   # 云端同步 API 封装
 └── store/              # Zustand 状态管理
     └── fund.ts         # 基金数据状态
 ```
@@ -109,9 +102,24 @@ src/
 ## 数据安全
 
 - 所有数据默认保存在浏览器本地存储中
-- Google Drive 同步是可选功能
-- API 凭据保存在本地，不会上传到服务器
+- 云端同步是可选功能，使用免费的 JSONBin.io 服务
+- API 密钥保存在本地，不会上传到服务器
 - 支持随时导出和备份数据
+
+## 云端服务说明
+
+### JSONBin.io 免费额度
+
+- 每月 10,000 次免费 API 调用
+- 每个 Bin 最大 100KB 存储空间
+- 无需信用卡，完全免费使用
+- 适合个人项目和小型应用
+
+### 数据存储
+
+- 数据以 JSON 格式存储在云端
+- 自动版本管理和备份
+- 支持实时同步和冲突检测
 
 ## 开发
 
