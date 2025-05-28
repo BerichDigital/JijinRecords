@@ -13,10 +13,9 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { Plus, TrendingUp, TrendingDown, DollarSign, PieChart, Trash2, Edit, Cloud, CloudOff, RefreshCw, Upload, Download } from 'lucide-react'
+import { Plus, TrendingUp, TrendingDown, DollarSign, PieChart, Trash2, Edit, FileText } from 'lucide-react'
 import type { Transaction } from '@/store/fund'
-import { CloudSync } from '@/components/CloudSync'
-import { cloudSync } from '@/lib/cloud-sync'
+import { DataManager } from '@/components/DataManager'
 
 interface TransactionFormData {
 	fundCode: string
@@ -37,26 +36,19 @@ export default function FundRecordsPage() {
 		accountSummary, 
 		addTransaction, 
 		deleteTransaction,
-		updateFundPrice,
-		importData
+		updateFundPrice
 	} = useFundStore()
 	
 	const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
 	const [editingFund, setEditingFund] = useState<string | null>(null)
 	const [newPrice, setNewPrice] = useState('')
-	const [isSyncing, setIsSyncing] = useState(false)
-	const [isConfigured, setIsConfigured] = useState(false)
-	const [showSyncDialog, setShowSyncDialog] = useState(false)
+	const [showDataDialog, setShowDataDialog] = useState(false)
 
 	// 处理客户端水合
 	useEffect(() => {
 		setIsHydrated(true)
 		// 手动触发 Zustand persist 的水合
 		useFundStore.persist.rehydrate()
-		
-		// 检查同步配置状态
-		const status = cloudSync.getConfigStatus()
-		setIsConfigured(status.isConfigured)
 	}, [])
 
 	const form = useForm<TransactionFormData>({
@@ -82,46 +74,6 @@ export default function FundRecordsPage() {
 				</div>
 			</div>
 		)
-	}
-
-	// 快速同步功能
-	const handleQuickSync = async (action: 'upload' | 'download') => {
-		if (!isConfigured) {
-			setShowSyncDialog(true)
-			return
-		}
-
-		try {
-			setIsSyncing(true)
-			
-			if (action === 'upload') {
-				const data = {
-					transactions,
-					holdings,
-					accountSummary,
-					fundPrices: useFundStore.getState().fundPrices
-				}
-				const success = await cloudSync.uploadData(data)
-				if (success) {
-					toast.success('数据已上传到云端！')
-				} else {
-					toast.error('上传失败，请检查网络连接')
-				}
-			} else {
-				const data = await cloudSync.downloadData()
-				if (data) {
-					importData(data)
-					toast.success('数据已从云端同步！')
-				} else {
-					toast.info('云端暂无数据')
-				}
-			}
-		} catch (error) {
-			console.error('同步失败:', error)
-			toast.error('同步失败，请检查网络连接')
-		} finally {
-			setIsSyncing(false)
-		}
 	}
 
 	const onSubmit = (data: TransactionFormData) => {
@@ -169,27 +121,23 @@ export default function FundRecordsPage() {
 						</div>
 						
 						<div className="flex items-center gap-3">
-							{/* 数据同步按钮 */}
-							<Dialog open={showSyncDialog} onOpenChange={setShowSyncDialog}>
+							{/* 数据管理按钮 */}
+							<Dialog open={showDataDialog} onOpenChange={setShowDataDialog}>
 								<DialogTrigger asChild>
 									<Button variant="outline" className="flex items-center gap-2">
-										{isConfigured ? (
-											<Cloud className="h-4 w-4 text-blue-500" />
-										) : (
-											<CloudOff className="h-4 w-4 text-gray-400" />
-										)}
-										数据同步
+										<FileText className="h-4 w-4 text-blue-500" />
+										数据管理
 									</Button>
 								</DialogTrigger>
 								<DialogContent className="max-w-md">
 									<DialogHeader>
-										<DialogTitle>数据同步</DialogTitle>
+										<DialogTitle>数据管理</DialogTitle>
 										<DialogDescription>
-											在不同设备间同步您的基金记录数据
+											导入导出您的基金记录数据
 										</DialogDescription>
 									</DialogHeader>
 									<div className="py-4">
-										<CloudSync />
+										<DataManager />
 									</div>
 								</DialogContent>
 							</Dialog>
