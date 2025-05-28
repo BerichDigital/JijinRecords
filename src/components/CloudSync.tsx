@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
-import { Cloud, CloudOff, Settings, Upload, Download, RefreshCw, Trash2, Info } from 'lucide-react'
+import { Cloud, CloudOff, Settings, Upload, Download, RefreshCw, Trash2, Info, CheckCircle, AlertCircle } from 'lucide-react'
 import { cloudSync, type CloudSyncConfig, type FundData } from '@/lib/cloud-sync'
 import { useFundStore } from '@/store/fund'
 
@@ -58,6 +58,11 @@ export function CloudSync() {
     setIsConfigured(true)
     setShowConfig(false)
     toast.success('配置已保存！现在可以开始同步数据了')
+    
+    // 重新加载云端信息
+    setTimeout(() => {
+      loadCloudInfo()
+    }, 500)
   }
 
   const handleUpload = async () => {
@@ -122,36 +127,165 @@ export function CloudSync() {
           ) : (
             <CloudOff className="h-5 w-5 text-gray-400" />
           )}
-          云端数据同步
+          数据同步
         </CardTitle>
         <CardDescription>
-          使用免费的 JSONBin.io 服务同步您的基金记录数据，在不同设备间保持数据一致
+          在不同设备间同步您的基金记录数据
         </CardDescription>
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* 配置状态 */}
-        <div className="flex items-center justify-between">
+        {/* 配置状态显示 */}
+        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">配置状态:</span>
-            <Badge variant={isConfigured ? "default" : "secondary"}>
-              {isConfigured ? "已配置" : "未配置"}
-            </Badge>
+            {isConfigured ? (
+              <CheckCircle className="h-4 w-4 text-green-500" />
+            ) : (
+              <AlertCircle className="h-4 w-4 text-orange-500" />
+            )}
+            <span className="text-sm font-medium">
+              {isConfigured ? '同步已配置' : '需要配置'}
+            </span>
           </div>
           
-          <div className="flex items-center gap-2">
-            <Dialog open={showConfig} onOpenChange={setShowConfig}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Settings className="h-4 w-4 mr-2" />
-                  {isConfigured ? '重新配置' : '配置 API'}
+          <Badge variant={isConfigured ? "default" : "secondary"}>
+            {isConfigured ? "就绪" : "未配置"}
+          </Badge>
+        </div>
+
+        {/* 已配置状态 - 显示同步操作 */}
+        {isConfigured && (
+          <div className="space-y-4">
+            {/* 云端数据信息 */}
+            {cloudInfo && (
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Info className="h-4 w-4 text-blue-600" />
+                  <span className="font-medium text-blue-800">云端数据</span>
+                </div>
+                <div className="text-sm text-blue-700">
+                  <p>最后更新: {cloudInfo.lastUpdated ? new Date(cloudInfo.lastUpdated).toLocaleString('zh-CN') : '未知'}</p>
+                  <p>数据大小: {cloudInfo.size ? `${(cloudInfo.size / 1024).toFixed(2)} KB` : '未知'}</p>
+                </div>
+              </div>
+            )}
+            
+            {/* 快速同步按钮 */}
+            <div className="space-y-3">
+              <h4 className="font-medium text-sm">快速同步</h4>
+              
+              <div className="grid grid-cols-1 gap-3">
+                <Button 
+                  onClick={handleUpload}
+                  disabled={isLoading}
+                  className="flex items-center gap-2 h-12"
+                >
+                  {isLoading ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  <div className="text-left">
+                    <div className="font-medium">上传到云端</div>
+                    <div className="text-xs opacity-80">将本地数据保存到云端</div>
+                  </div>
                 </Button>
-              </DialogTrigger>
+                
+                <Button 
+                  variant="outline"
+                  onClick={handleDownload}
+                  disabled={isLoading}
+                  className="flex items-center gap-2 h-12"
+                >
+                  {isLoading ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  <div className="text-left">
+                    <div className="font-medium">从云端下载</div>
+                    <div className="text-xs opacity-80">获取最新的云端数据</div>
+                  </div>
+                </Button>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* 配置管理 */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">配置管理</span>
+              <div className="flex gap-2">
+                <Dialog open={showConfig} onOpenChange={setShowConfig}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Settings className="h-4 w-4 mr-2" />
+                      重新配置
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>重新配置云端同步</DialogTitle>
+                      <DialogDescription>
+                        更新您的 JSONBin.io API 密钥
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="apiKey">API 密钥</Label>
+                        <Input
+                          id="apiKey"
+                          value={apiKey}
+                          onChange={(e) => setApiKey(e.target.value)}
+                          placeholder="$2a$10$..."
+                          type="password"
+                        />
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button onClick={handleSaveConfig} className="flex-1">
+                          保存配置
+                        </Button>
+                        <Button variant="outline" onClick={() => setShowConfig(false)}>
+                          取消
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <Button variant="outline" size="sm" onClick={handleClearConfig}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  清除配置
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 未配置状态 - 显示配置引导 */}
+        {!isConfigured && (
+          <div className="space-y-4">
+            <div className="bg-orange-50 p-4 rounded-lg text-center">
+              <AlertCircle className="h-8 w-8 text-orange-500 mx-auto mb-3" />
+              <h3 className="font-medium text-orange-800 mb-2">首次使用需要配置</h3>
+              <p className="text-sm text-orange-700 mb-4">
+                配置一次后，所有设备都可以使用相同的配置进行数据同步
+              </p>
+              <Button onClick={() => setShowConfig(true)} className="w-full">
+                <Settings className="h-4 w-4 mr-2" />
+                开始配置
+              </Button>
+            </div>
+
+            {/* 配置对话框 */}
+            <Dialog open={showConfig} onOpenChange={setShowConfig}>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>云端同步配置</DialogTitle>
+                  <DialogTitle>配置云端数据同步</DialogTitle>
                   <DialogDescription>
-                    请输入您的 JSONBin.io API 密钥。如果您还没有，请访问 jsonbin.io 免费注册。
+                    请输入您的 JSONBin.io API 密钥。配置一次后，其他设备使用相同密钥即可同步数据。
                   </DialogDescription>
                 </DialogHeader>
                 
@@ -177,6 +311,13 @@ export function CloudSync() {
                     </ol>
                   </div>
                   
+                  <div className="bg-green-50 p-3 rounded-lg text-sm">
+                    <p className="font-medium text-green-800 mb-1">多设备同步说明:</p>
+                    <p className="text-green-700">
+                      配置完成后，在其他设备上使用相同的 API 密钥即可自动同步数据，无需重复配置。
+                    </p>
+                  </div>
+                  
                   <div className="flex gap-2">
                     <Button onClick={handleSaveConfig} className="flex-1">
                       保存配置
@@ -189,95 +330,16 @@ export function CloudSync() {
               </DialogContent>
             </Dialog>
 
-            {isConfigured && (
-              <Button variant="outline" size="sm" onClick={handleClearConfig}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                清除配置
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* 云端信息 */}
-        {isConfigured && cloudInfo && (
-          <div className="bg-green-50 p-3 rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <Info className="h-4 w-4 text-green-600" />
-              <span className="font-medium text-green-800">云端数据信息</span>
-            </div>
-            <div className="text-sm text-green-700">
-              <p>最后更新: {cloudInfo.lastUpdated ? new Date(cloudInfo.lastUpdated).toLocaleString('zh-CN') : '未知'}</p>
-              <p>数据大小: {cloudInfo.size ? `${(cloudInfo.size / 1024).toFixed(2)} KB` : '未知'}</p>
-            </div>
-          </div>
-        )}
-
-        {/* 同步操作 */}
-        {isConfigured && (
-          <div className="space-y-3">
-            <h4 className="font-medium">数据同步操作</h4>
-            
-            <div className="grid grid-cols-2 gap-3">
-              <Button 
-                variant="outline" 
-                onClick={handleUpload}
-                disabled={isLoading}
-                className="flex items-center gap-2"
-              >
-                {isLoading ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="h-4 w-4" />
-                )}
-                上传数据
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                onClick={handleDownload}
-                disabled={isLoading}
-                className="flex items-center gap-2"
-              >
-                {isLoading ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4" />
-                )}
-                下载数据
-              </Button>
-            </div>
-            
-            <div className="bg-yellow-50 p-3 rounded-lg text-sm">
-              <p className="text-yellow-800">
-                <strong>提示:</strong> 上传会将当前数据保存到云端，下载会从云端获取最新数据并覆盖本地数据。
+            {/* 服务介绍 */}
+            <div className="bg-blue-50 p-3 rounded-lg text-sm">
+              <p className="font-medium text-blue-800 mb-1">关于 JSONBin.io:</p>
+              <p className="text-blue-700">
+                免费的 JSON 数据存储服务，每月提供 10,000 次免费 API 调用，
+                非常适合个人项目的数据同步需求。
               </p>
             </div>
           </div>
         )}
-
-        {/* 未配置提示 */}
-        {!isConfigured && (
-          <div className="bg-gray-50 p-4 rounded-lg text-center">
-            <p className="text-gray-600 mb-3">
-              请先配置 JSONBin.io API 密钥以开始使用云端同步功能
-            </p>
-            <Button onClick={() => setShowConfig(true)}>
-              <Settings className="h-4 w-4 mr-2" />
-              开始配置
-            </Button>
-          </div>
-        )}
-
-        {/* 服务介绍 */}
-        <div className="bg-blue-50 p-3 rounded-lg text-sm">
-          <p className="font-medium text-blue-800 mb-1">关于 JSONBin.io:</p>
-          <p className="text-blue-700">
-            JSONBin.io 是一个免费的 JSON 数据存储服务，每月提供 10,000 次免费 API 调用，
-            非常适合个人项目的数据同步需求。
-          </p>
-        </div>
       </CardContent>
     </Card>
   )
