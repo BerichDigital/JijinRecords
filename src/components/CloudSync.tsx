@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { toast } from 'sonner'
-import { Cloud, CloudOff, Settings, Upload, Download, RefreshCw, Trash2, Info, CheckCircle, AlertCircle } from 'lucide-react'
+import { Cloud, CloudOff, Settings, Upload, Download, RefreshCw, Trash2, Info, CheckCircle, AlertCircle, ChevronDown, Bug } from 'lucide-react'
 import { cloudSync, type CloudSyncConfig, type FundData } from '@/lib/cloud-sync'
 import { useFundStore } from '@/store/fund'
 
@@ -19,6 +20,7 @@ export function CloudSync() {
   const [showConfig, setShowConfig] = useState(false)
   const [cloudInfo, setCloudInfo] = useState<any>(null)
   const [isHydrated, setIsHydrated] = useState(false)
+  const [showDebug, setShowDebug] = useState(false)
   
   // API 配置状态
   const [apiKey, setApiKey] = useState('')
@@ -132,29 +134,63 @@ export function CloudSync() {
   const handleDownload = async () => {
     try {
       setIsLoading(true)
-      console.log('开始下载数据...')
+      console.log('=== CloudSync组件：开始下载流程 ===')
+      console.log('当前组件状态:', {
+        isHydrated,
+        isConfigured,
+        localTransactions: transactions.length,
+        localHoldings: holdings.length
+      })
       
       const data = await cloudSync.downloadData()
-      console.log('下载完成，获得数据:', data)
+      console.log('=== CloudSync组件：下载完成 ===')
+      console.log('下载结果:', data)
       
       if (data) {
-        console.log('准备导入数据到store:', {
+        console.log('=== CloudSync组件：准备导入数据 ===')
+        console.log('导入前本地数据:', {
+          transactions: transactions.length,
+          holdings: holdings.length,
+          accountSummary
+        })
+        
+        console.log('准备导入的数据:', {
           transactions: data.transactions?.length || 0,
           holdings: data.holdings?.length || 0,
           accountSummary: data.accountSummary
         })
         
         // 使用 zustand store 的 importData 方法导入数据
+        console.log('调用importData方法...')
         importData(data)
         
-        console.log('数据导入完成')
-        toast.success(`数据已从云端下载并同步！包含 ${data.transactions?.length || 0} 条交易记录`)
+        console.log('=== CloudSync组件：数据导入完成 ===')
+        
+        // 验证导入结果
+        setTimeout(() => {
+          console.log('导入后验证 - 当前store状态:', {
+            transactions: useFundStore.getState().transactions.length,
+            holdings: useFundStore.getState().holdings.length,
+            accountSummary: useFundStore.getState().accountSummary
+          })
+        }, 100)
+        
+        const transactionCount = data.transactions?.length || 0
+        const holdingCount = data.holdings?.length || 0
+        
+        if (transactionCount > 0 || holdingCount > 0) {
+          toast.success(`数据已从云端下载并同步！包含 ${transactionCount} 条交易记录，${holdingCount} 个持仓`)
+        } else {
+          toast.info('云端数据为空，可能还没有上传过数据')
+        }
       } else {
-        console.log('云端没有数据')
-        toast.info('云端没有找到数据，请先上传数据')
+        console.log('=== CloudSync组件：下载失败 ===')
+        console.log('下载返回null，可能是网络错误或云端无数据')
+        toast.info('云端没有找到数据，请先上传数据或检查网络连接')
       }
     } catch (error) {
-      console.error('下载失败:', error)
+      console.error('=== CloudSync组件：下载异常 ===')
+      console.error('异常详情:', error)
       toast.error('下载失败，请检查网络连接或先上传数据')
     } finally {
       setIsLoading(false)
@@ -406,6 +442,71 @@ export function CloudSync() {
             </div>
           </div>
         )}
+
+        {/* 调试面板 */}
+        <Separator />
+        <Collapsible open={showDebug} onOpenChange={setShowDebug}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="w-full justify-between p-2">
+              <div className="flex items-center gap-2">
+                <Bug className="h-4 w-4" />
+                <span className="text-sm">调试信息</span>
+              </div>
+              <ChevronDown className={`h-4 w-4 transition-transform ${showDebug ? 'rotate-180' : ''}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-3 pt-3">
+            <div className="bg-gray-50 p-3 rounded-lg text-xs font-mono">
+              <div className="space-y-2">
+                <div>
+                  <span className="font-semibold">组件状态:</span>
+                  <div className="ml-2">
+                    <div>isHydrated: {String(isHydrated)}</div>
+                    <div>isConfigured: {String(isConfigured)}</div>
+                    <div>isLoading: {String(isLoading)}</div>
+                  </div>
+                </div>
+                
+                <div>
+                  <span className="font-semibold">本地数据:</span>
+                  <div className="ml-2">
+                    <div>transactions: {transactions.length} 条</div>
+                    <div>holdings: {holdings.length} 个</div>
+                    <div>totalInvestment: ¥{accountSummary.totalInvestment.toFixed(2)}</div>
+                    <div>fundPrices: {Object.keys(fundPrices).length} 个</div>
+                  </div>
+                </div>
+                
+                {isConfigured && (
+                  <div>
+                    <span className="font-semibold">云端配置:</span>
+                    <div className="ml-2">
+                      <div>hasApiKey: {String(!!cloudSync.getConfigStatus().hasApiKey)}</div>
+                      <div>hasBinId: {String(!!cloudSync.getConfigStatus().hasBinId)}</div>
+                      <div>binId: {cloudInfo?.binId || '未知'}</div>
+                    </div>
+                  </div>
+                )}
+                
+                {cloudInfo && (
+                  <div>
+                    <span className="font-semibold">云端数据:</span>
+                    <div className="ml-2">
+                      <div>lastUpdated: {cloudInfo.lastUpdated || '未知'}</div>
+                      <div>size: {cloudInfo.size ? `${cloudInfo.size} bytes` : '未知'}</div>
+                      <div>appVersion: {cloudInfo.appVersion || '未知'}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="text-xs text-gray-500">
+              <p>💡 提示：如果数据同步有问题，请打开浏览器开发者工具查看控制台日志获取详细信息。</p>
+              <p>🔧 常见问题：确保API密钥正确，网络连接正常，不同设备使用相同的API密钥。</p>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </CardContent>
     </Card>
   )
