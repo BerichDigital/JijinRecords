@@ -22,8 +22,9 @@ interface TransactionFormData {
 	fundName: string
 	type: '买入' | '卖出'
 	date: string
+	price: number
+	quantity: number
 	amount: number
-	shares: number
 	unitPrice: number
 	fee: number
 }
@@ -57,12 +58,22 @@ export default function FundRecordsPage() {
 			fundName: '',
 			type: '买入',
 			date: new Date().toISOString().split('T')[0],
+			price: 0,
+			quantity: 0,
 			amount: 0,
-			shares: 0,
 			unitPrice: 0,
 			fee: 0
 		}
 	})
+
+	// 监听价格和数量变化，自动计算交易金额
+	const watchPrice = form.watch('price')
+	const watchQuantity = form.watch('quantity')
+	
+	useEffect(() => {
+		const amount = watchPrice * watchQuantity
+		form.setValue('amount', amount)
+	}, [watchPrice, watchQuantity, form])
 
 	// 在水合完成前显示加载状态
 	if (!isHydrated) {
@@ -230,15 +241,15 @@ export default function FundRecordsPage() {
 											<div className="grid grid-cols-2 gap-4">
 												<FormField
 													control={form.control}
-													name="amount"
+													name="price"
 													render={({ field }) => (
 														<FormItem>
-															<FormLabel>交易金额</FormLabel>
+															<FormLabel>交易价格</FormLabel>
 															<FormControl>
 																<Input 
 																	type="number" 
-																	step="0.01"
-																	placeholder="0.00"
+																	step="0.0001"
+																	placeholder="0.0000"
 																	{...field}
 																	onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
 																/>
@@ -250,10 +261,10 @@ export default function FundRecordsPage() {
 												
 												<FormField
 													control={form.control}
-													name="shares"
+													name="quantity"
 													render={({ field }) => (
 														<FormItem>
-															<FormLabel>成交份额</FormLabel>
+															<FormLabel>交易数量</FormLabel>
 															<FormControl>
 																<Input 
 																	type="number" 
@@ -270,6 +281,28 @@ export default function FundRecordsPage() {
 											</div>
 
 											<div className="grid grid-cols-2 gap-4">
+												<FormField
+													control={form.control}
+													name="amount"
+													render={({ field }) => (
+														<FormItem>
+															<FormLabel>交易金额（自动计算）</FormLabel>
+															<FormControl>
+																<Input 
+																	type="number" 
+																	step="0.01"
+																	placeholder="0.00"
+																	{...field}
+																	value={field.value.toFixed(2)}
+																	readOnly
+																	className="bg-gray-50"
+																/>
+															</FormControl>
+															<FormMessage />
+														</FormItem>
+													)}
+												/>
+												
 												<FormField
 													control={form.control}
 													name="unitPrice"
@@ -289,7 +322,9 @@ export default function FundRecordsPage() {
 														</FormItem>
 													)}
 												/>
-												
+											</div>
+
+											<div className="grid grid-cols-1 gap-4">
 												<FormField
 													control={form.control}
 													name="fee"
@@ -558,8 +593,9 @@ export default function FundRecordsPage() {
 															<TableRow>
 																<TableHead>日期</TableHead>
 																<TableHead>交易类型</TableHead>
+																<TableHead>交易价格</TableHead>
+																<TableHead>交易数量</TableHead>
 																<TableHead>交易金额</TableHead>
-																<TableHead>成交份额</TableHead>
 																<TableHead>单位净值</TableHead>
 																<TableHead>手续费</TableHead>
 																<TableHead>操作</TableHead>
@@ -576,10 +612,11 @@ export default function FundRecordsPage() {
 																			{transaction.type}
 																		</Badge>
 																	</TableCell>
-																	<TableCell>{formatCurrency(transaction.amount)}</TableCell>
-																	<TableCell>{transaction.shares.toFixed(2)}</TableCell>
+																	<TableCell>{transaction.price.toFixed(4)}</TableCell>
+																	<TableCell>{transaction.quantity.toFixed(2)}</TableCell>
+																	<TableCell>{transaction.amount.toFixed(2)}</TableCell>
 																	<TableCell>{transaction.unitPrice.toFixed(4)}</TableCell>
-																	<TableCell>{formatCurrency(transaction.fee)}</TableCell>
+																	<TableCell>{transaction.fee.toFixed(2)}</TableCell>
 																	<TableCell>
 																		<Button
 																			size="sm"
@@ -639,8 +676,9 @@ export default function FundRecordsPage() {
 																		<TableRow>
 																			<TableHead>日期</TableHead>
 																			<TableHead>交易类型</TableHead>
+																			<TableHead>交易价格</TableHead>
+																			<TableHead>交易数量</TableHead>
 																			<TableHead>交易金额</TableHead>
-																			<TableHead>成交份额</TableHead>
 																			<TableHead>单位净值</TableHead>
 																			<TableHead>手续费</TableHead>
 																			<TableHead>操作</TableHead>
@@ -657,10 +695,11 @@ export default function FundRecordsPage() {
 																						{transaction.type}
 																					</Badge>
 																				</TableCell>
-																				<TableCell>{formatCurrency(transaction.amount)}</TableCell>
-																				<TableCell>{transaction.shares.toFixed(2)}</TableCell>
+																				<TableCell>{transaction.price.toFixed(4)}</TableCell>
+																				<TableCell>{transaction.quantity.toFixed(2)}</TableCell>
+																				<TableCell>{transaction.amount.toFixed(2)}</TableCell>
 																				<TableCell>{transaction.unitPrice.toFixed(4)}</TableCell>
-																				<TableCell>{formatCurrency(transaction.fee)}</TableCell>
+																				<TableCell>{transaction.fee.toFixed(2)}</TableCell>
 																				<TableCell>
 																					<Button
 																						size="sm"

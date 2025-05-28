@@ -8,9 +8,10 @@ export interface Transaction {
   fundName: string
   type: '买入' | '卖出'
   date: string
-  amount: number // 交易金额
-  shares: number // 成交份额
-  unitPrice: number // 单位净值
+  price: number // 交易价格
+  quantity: number // 交易数量（原来的shares）
+  amount: number // 交易金额（计算得出：price × quantity）
+  unitPrice: number // 单位净值（保留用于显示）
   fee: number // 手续费
 }
 
@@ -132,13 +133,13 @@ export const useFundStore = create<FundState>()(
           }
 
           if (transaction.type === '买入') {
-            existing.totalShares += transaction.shares
+            existing.totalShares += transaction.quantity
             existing.totalCost += transaction.amount + transaction.fee
           } else if (transaction.type === '卖出') {
             // 按比例减少成本
-            const sellRatio = transaction.shares / existing.totalShares
+            const sellRatio = transaction.quantity / existing.totalShares
             existing.totalCost -= existing.totalCost * sellRatio
-            existing.totalShares -= transaction.shares
+            existing.totalShares -= transaction.quantity
           }
 
           // 使用手动更新的价格，如果没有则使用最新交易价格

@@ -27,8 +27,9 @@ export function DataManager() {
         '基金代码': t.fundCode,
         '基金名称': t.fundName,
         '交易类型': t.type,
+        '交易价格': t.price,
+        '交易数量': t.quantity,
         '交易金额': t.amount,
-        '成交份额': t.shares,
         '单位净值': t.unitPrice,
         '手续费': t.fee
       }))
@@ -116,8 +117,9 @@ export function DataManager() {
               fundCode: row['基金代码'] || '',
               fundName: row['基金名称'] || '',
               type: row['交易类型'] || '买入',
+              price: Number(row['交易价格']) || 0,
+              quantity: Number(row['交易数量']) || 0,
               amount: Number(row['交易金额']) || 0,
-              shares: Number(row['成交份额']) || 0,
               unitPrice: Number(row['单位净值']) || 0,
               fee: Number(row['手续费']) || 0
             }))
@@ -292,7 +294,7 @@ export function DataManager() {
                     <ul className="text-blue-700 space-y-1 list-disc list-inside">
                       <li>支持 .xlsx 和 .xls 格式</li>
                       <li>必须包含"交易记录"工作表</li>
-                      <li>列标题：交易日期、基金代码、基金名称、交易类型、交易金额、成交份额、单位净值、手续费</li>
+                      <li>列标题：交易日期、基金代码、基金名称、交易类型、交易价格、交易数量、交易金额、单位净值、手续费</li>
                       <li>可选包含"基金净值"工作表（基金代码、当前净值）</li>
                     </ul>
                   </div>
