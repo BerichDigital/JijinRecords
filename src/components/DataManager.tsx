@@ -7,72 +7,160 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { toast } from 'sonner'
 import { Download, Upload, FileText, AlertTriangle } from 'lucide-react'
 import { useFundStore } from '@/store/fund'
+import * as XLSX from 'xlsx'
 
 export function DataManager() {
   const [showImportDialog, setShowImportDialog] = useState(false)
   const { transactions, holdings, accountSummary, fundPrices, importData, exportData } = useFundStore()
 
-  // 导出数据到JSON文件
+  // 导出数据到Excel文件
   const handleExport = () => {
     try {
       const data = exportData()
-      const jsonString = JSON.stringify(data, null, 2)
-      const blob = new Blob([jsonString], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
       
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `基金投资记录_${new Date().toISOString().split('T')[0]}.json`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
+      // 创建工作簿
+      const workbook = XLSX.utils.book_new()
       
-      toast.success(`数据已导出！包含 ${transactions.length} 条交易记录，${holdings.length} 个持仓`)
+      // 交易记录工作表
+      const transactionsData = data.transactions.map(t => ({
+        '交易日期': t.date,
+        '基金代码': t.fundCode,
+        '基金名称': t.fundName,
+        '交易类型': t.type,
+        '交易金额': t.amount,
+        '成交份额': t.shares,
+        '单位净值': t.unitPrice,
+        '手续费': t.fee
+      }))
+      const transactionsSheet = XLSX.utils.json_to_sheet(transactionsData)
+      XLSX.utils.book_append_sheet(workbook, transactionsSheet, '交易记录')
+      
+      // 持仓详情工作表
+      const holdingsData = data.holdings.map(h => ({
+        '基金代码': h.fundCode,
+        '基金名称': h.fundName,
+        '持仓份额': h.totalShares,
+        '持仓成本': h.totalCost,
+        '平均成本': h.averageCost,
+        '当前净值': h.currentPrice,
+        '当前市值': h.currentValue,
+        '盈亏金额': h.totalProfit,
+        '收益率(%)': h.profitRate
+      }))
+      const holdingsSheet = XLSX.utils.json_to_sheet(holdingsData)
+      XLSX.utils.book_append_sheet(workbook, holdingsSheet, '持仓详情')
+      
+      // 账户概览工作表
+      const summaryData = [{
+        '总投入': data.accountSummary.totalInvestment,
+        '当前市值': data.accountSummary.totalValue,
+        '总盈亏': data.accountSummary.totalProfit,
+        '总收益率(%)': data.accountSummary.totalProfitRate
+      }]
+      const summarySheet = XLSX.utils.json_to_sheet(summaryData)
+      XLSX.utils.book_append_sheet(workbook, summarySheet, '账户概览')
+      
+      // 基金净值工作表
+      const pricesData = Object.entries(data.fundPrices).map(([code, price]) => ({
+        '基金代码': code,
+        '当前净值': price
+      }))
+      if (pricesData.length > 0) {
+        const pricesSheet = XLSX.utils.json_to_sheet(pricesData)
+        XLSX.utils.book_append_sheet(workbook, pricesSheet, '基金净值')
+      }
+      
+      // 导出文件
+      const fileName = `基金投资记录_${new Date().toISOString().split('T')[0]}.xlsx`
+      XLSX.writeFile(workbook, fileName)
+      
+      toast.success(`数据已导出到Excel文件！包含 ${transactions.length} 条交易记录，${holdings.length} 个持仓`)
     } catch (error) {
       console.error('导出失败:', error)
       toast.error('导出失败，请重试')
     }
   }
 
-  // 导入数据从JSON文件
+  // 从Excel文件导入数据
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
-    if (file.type !== 'application/json') {
-      toast.error('请选择JSON格式的文件')
+    // 检查文件类型
+    const validTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel'
+    ]
+    
+    if (!validTypes.includes(file.type) && !file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      toast.error('请选择Excel格式的文件(.xlsx 或 .xls)')
       return
     }
 
     const reader = new FileReader()
     reader.onload = (e) => {
       try {
-        const content = e.target?.result as string
-        const data = JSON.parse(content)
+        const data = new Uint8Array(e.target?.result as ArrayBuffer)
+        const workbook = XLSX.read(data, { type: 'array' })
         
-        // 验证数据格式
-        if (!data || typeof data !== 'object') {
-          throw new Error('无效的数据格式')
+        // 读取交易记录
+        let transactions: any[] = []
+        if (workbook.SheetNames.includes('交易记录')) {
+          const transactionsSheet = workbook.Sheets['交易记录']
+          if (transactionsSheet) {
+            const transactionsData = XLSX.utils.sheet_to_json(transactionsSheet)
+            
+            transactions = transactionsData.map((row: any, index: number) => ({
+              id: Date.now().toString() + index.toString(),
+              date: row['交易日期'] || '',
+              fundCode: row['基金代码'] || '',
+              fundName: row['基金名称'] || '',
+              type: row['交易类型'] || '买入',
+              amount: Number(row['交易金额']) || 0,
+              shares: Number(row['成交份额']) || 0,
+              unitPrice: Number(row['单位净值']) || 0,
+              fee: Number(row['手续费']) || 0
+            }))
+          }
         }
-
-        // 检查必要的字段
-        const requiredFields = ['transactions', 'holdings', 'accountSummary', 'fundPrices']
-        const missingFields = requiredFields.filter(field => !(field in data))
         
-        if (missingFields.length > 0) {
-          throw new Error(`缺少必要字段: ${missingFields.join(', ')}`)
+        // 读取基金净值（如果存在）
+        let fundPrices: Record<string, number> = {}
+        if (workbook.SheetNames.includes('基金净值')) {
+          const pricesSheet = workbook.Sheets['基金净值']
+          if (pricesSheet) {
+            const pricesData = XLSX.utils.sheet_to_json(pricesSheet)
+            
+            pricesData.forEach((row: any) => {
+              if (row['基金代码'] && row['当前净值']) {
+                fundPrices[row['基金代码']] = Number(row['当前净值'])
+              }
+            })
+          }
         }
-
-        // 验证数组类型
-        if (!Array.isArray(data.transactions) || !Array.isArray(data.holdings)) {
-          throw new Error('交易记录和持仓数据必须是数组格式')
+        
+        // 构建导入数据
+        const importDataObj = {
+          transactions,
+          holdings: [], // 持仓会根据交易记录重新计算
+          accountSummary: {
+            totalInvestment: 0,
+            totalValue: 0,
+            totalProfit: 0,
+            totalProfitRate: 0
+          },
+          fundPrices
         }
-
+        
+        // 验证数据
+        if (transactions.length === 0) {
+          throw new Error('Excel文件中没有找到有效的交易记录数据')
+        }
+        
         // 导入数据
-        importData(data)
+        importData(importDataObj)
         
-        toast.success(`数据导入成功！包含 ${data.transactions.length} 条交易记录，${data.holdings.length} 个持仓`)
+        toast.success(`数据导入成功！包含 ${transactions.length} 条交易记录`)
         setShowImportDialog(false)
         
         // 清空文件输入
@@ -84,7 +172,7 @@ export function DataManager() {
       }
     }
 
-    reader.readAsText(file)
+    reader.readAsArrayBuffer(file)
   }
 
   // 清空所有数据
@@ -115,7 +203,7 @@ export function DataManager() {
           数据管理
         </CardTitle>
         <CardDescription>
-          导入导出您的基金投资记录数据
+          导入导出您的基金投资记录数据（Excel格式）
         </CardDescription>
       </CardHeader>
       
@@ -146,8 +234,8 @@ export function DataManager() {
             >
               <Download className="h-4 w-4" />
               <div className="text-left">
-                <div className="font-medium">导出数据</div>
-                <div className="text-xs opacity-80">将数据保存为JSON文件</div>
+                <div className="font-medium">导出到Excel</div>
+                <div className="text-xs opacity-80">将数据保存为Excel文件</div>
               </div>
             </Button>
             
@@ -160,8 +248,8 @@ export function DataManager() {
                 >
                   <Upload className="h-4 w-4" />
                   <div className="text-left">
-                    <div className="font-medium">导入数据</div>
-                    <div className="text-xs opacity-80">从JSON文件导入数据</div>
+                    <div className="font-medium">从Excel导入</div>
+                    <div className="text-xs opacity-80">从Excel文件导入数据</div>
                   </div>
                 </Button>
               </DialogTrigger>
@@ -169,7 +257,7 @@ export function DataManager() {
                 <DialogHeader>
                   <DialogTitle>导入数据</DialogTitle>
                   <DialogDescription>
-                    选择之前导出的JSON文件来导入数据
+                    选择Excel文件来导入交易记录数据
                   </DialogDescription>
                 </DialogHeader>
                 
@@ -188,22 +276,25 @@ export function DataManager() {
                   
                   <div>
                     <label htmlFor="import-file" className="block text-sm font-medium mb-2">
-                      选择JSON文件
+                      选择Excel文件
                     </label>
                     <input
                       id="import-file"
                       type="file"
-                      accept=".json"
+                      accept=".xlsx,.xls"
                       onChange={handleImport}
                       className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                     />
                   </div>
                   
                   <div className="bg-blue-50 p-3 rounded-lg text-sm">
-                    <p className="font-medium text-blue-800 mb-1">支持的文件格式:</p>
-                    <p className="text-blue-700">
-                      只支持通过本应用导出的JSON格式文件
-                    </p>
+                    <p className="font-medium text-blue-800 mb-2">Excel文件格式要求:</p>
+                    <ul className="text-blue-700 space-y-1 list-disc list-inside">
+                      <li>支持 .xlsx 和 .xls 格式</li>
+                      <li>必须包含"交易记录"工作表</li>
+                      <li>列标题：交易日期、基金代码、基金名称、交易类型、交易金额、成交份额、单位净值、手续费</li>
+                      <li>可选包含"基金净值"工作表（基金代码、当前净值）</li>
+                    </ul>
                   </div>
                   
                   <div className="flex gap-2">
@@ -268,8 +359,9 @@ export function DataManager() {
         <div className="bg-green-50 p-3 rounded-lg text-sm">
           <p className="font-medium text-green-800 mb-2">使用说明:</p>
           <ul className="text-green-700 space-y-1 list-disc list-inside">
-            <li>导出：将当前数据保存为JSON文件到本地</li>
-            <li>导入：从之前导出的JSON文件恢复数据</li>
+            <li>导出：将当前数据保存为Excel文件，包含多个工作表</li>
+            <li>导入：从Excel文件的"交易记录"工作表导入数据</li>
+            <li>持仓数据会根据交易记录自动计算</li>
             <li>数据在浏览器本地存储，清除浏览器数据会丢失</li>
             <li>建议定期导出数据作为备份</li>
           </ul>

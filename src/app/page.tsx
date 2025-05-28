@@ -511,7 +511,7 @@ export default function FundRecordsPage() {
 						<CardHeader>
 							<CardTitle>交易记录</CardTitle>
 							<CardDescription>
-								所有基金买入和卖出的历史记录
+								所有基金买入和卖出的历史记录，按基金分类显示
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
@@ -520,50 +520,168 @@ export default function FundRecordsPage() {
 									暂无交易记录，请先添加交易记录
 								</div>
 							) : (
-								<Table>
-									<TableHeader>
-										<TableRow>
-											<TableHead>日期</TableHead>
-											<TableHead>基金代码</TableHead>
-											<TableHead>基金名称</TableHead>
-											<TableHead>交易类型</TableHead>
-											<TableHead>交易金额</TableHead>
-											<TableHead>成交份额</TableHead>
-											<TableHead>单位净值</TableHead>
-											<TableHead>手续费</TableHead>
-											<TableHead>操作</TableHead>
-										</TableRow>
-									</TableHeader>
-									<TableBody>
-										{transactions
-											.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-											.map((transaction) => (
-											<TableRow key={transaction.id}>
-												<TableCell>{transaction.date}</TableCell>
-												<TableCell className="font-medium">{transaction.fundCode}</TableCell>
-												<TableCell>{transaction.fundName}</TableCell>
-												<TableCell>
-													<Badge variant={transaction.type === '买入' ? 'default' : 'secondary'}>
-														{transaction.type}
-													</Badge>
-												</TableCell>
-												<TableCell>{formatCurrency(transaction.amount)}</TableCell>
-												<TableCell>{transaction.shares.toFixed(2)}</TableCell>
-												<TableCell>{transaction.unitPrice.toFixed(4)}</TableCell>
-												<TableCell>{formatCurrency(transaction.fee)}</TableCell>
-												<TableCell>
-													<Button
-														size="sm"
-														variant="ghost"
-														onClick={() => handleDeleteTransaction(transaction.id)}
-													>
-														<Trash2 className="h-3 w-3" />
-													</Button>
-												</TableCell>
-											</TableRow>
-										))}
-									</TableBody>
-								</Table>
+								<div className="space-y-4">
+									{/* 按基金分组显示交易记录 */}
+									{(() => {
+										// 按基金代码分组
+										const groupedTransactions = transactions.reduce((groups, transaction) => {
+											const key = `${transaction.fundCode}-${transaction.fundName}`
+											if (!groups[key]) {
+												groups[key] = []
+											}
+											groups[key].push(transaction)
+											return groups
+										}, {} as Record<string, Transaction[]>)
+
+										const fundGroups = Object.entries(groupedTransactions)
+
+										if (fundGroups.length === 1) {
+											// 只有一只基金时，直接显示表格
+											const fundGroup = fundGroups[0]
+											if (!fundGroup) return null
+											
+											const [fundKey, fundTransactions] = fundGroup
+											const [fundCode, fundName] = fundKey.split('-')
+											
+											return (
+												<div>
+													<div className="mb-4 p-3 bg-blue-50 rounded-lg">
+														<h3 className="font-medium text-blue-800">
+															{fundCode} - {fundName}
+														</h3>
+														<p className="text-sm text-blue-600">
+															共 {fundTransactions.length} 条交易记录
+														</p>
+													</div>
+													<Table>
+														<TableHeader>
+															<TableRow>
+																<TableHead>日期</TableHead>
+																<TableHead>交易类型</TableHead>
+																<TableHead>交易金额</TableHead>
+																<TableHead>成交份额</TableHead>
+																<TableHead>单位净值</TableHead>
+																<TableHead>手续费</TableHead>
+																<TableHead>操作</TableHead>
+															</TableRow>
+														</TableHeader>
+														<TableBody>
+															{fundTransactions
+																.sort((a: Transaction, b: Transaction) => new Date(b.date).getTime() - new Date(a.date).getTime())
+																.map((transaction: Transaction) => (
+																<TableRow key={transaction.id}>
+																	<TableCell>{transaction.date}</TableCell>
+																	<TableCell>
+																		<Badge variant={transaction.type === '买入' ? 'default' : 'secondary'}>
+																			{transaction.type}
+																		</Badge>
+																	</TableCell>
+																	<TableCell>{formatCurrency(transaction.amount)}</TableCell>
+																	<TableCell>{transaction.shares.toFixed(2)}</TableCell>
+																	<TableCell>{transaction.unitPrice.toFixed(4)}</TableCell>
+																	<TableCell>{formatCurrency(transaction.fee)}</TableCell>
+																	<TableCell>
+																		<Button
+																			size="sm"
+																			variant="ghost"
+																			onClick={() => handleDeleteTransaction(transaction.id)}
+																		>
+																			<Trash2 className="h-3 w-3" />
+																		</Button>
+																	</TableCell>
+																</TableRow>
+															))}
+														</TableBody>
+													</Table>
+												</div>
+											)
+										} else {
+											// 多只基金时，使用Tabs分组显示
+											const defaultValue = fundGroups[0]?.[0] || ''
+											
+											return (
+												<Tabs defaultValue={defaultValue} className="w-full">
+													<TabsList className="grid w-full grid-cols-auto gap-1 h-auto p-1" style={{gridTemplateColumns: `repeat(${Math.min(fundGroups.length, 4)}, 1fr)`}}>
+														{fundGroups.slice(0, 4).map(([fundKey]) => {
+															const [fundCode, fundName] = fundKey.split('-')
+															return (
+																<TabsTrigger 
+																	key={fundKey} 
+																	value={fundKey}
+																	className="text-xs px-2 py-1 data-[state=active]:bg-blue-100"
+																>
+																	{fundCode}
+																</TabsTrigger>
+															)
+														})}
+														{fundGroups.length > 4 && (
+															<div className="text-xs text-gray-500 px-2 py-1">
+																+{fundGroups.length - 4}只
+															</div>
+														)}
+													</TabsList>
+													
+													{fundGroups.map(([fundKey, fundTransactions]) => {
+														const [fundCode, fundName] = fundKey.split('-')
+														
+														return (
+															<TabsContent key={fundKey} value={fundKey} className="mt-4">
+																<div className="mb-4 p-3 bg-blue-50 rounded-lg">
+																	<h3 className="font-medium text-blue-800">
+																		{fundCode} - {fundName}
+																	</h3>
+																	<p className="text-sm text-blue-600">
+																		共 {fundTransactions.length} 条交易记录
+																	</p>
+																</div>
+																<Table>
+																	<TableHeader>
+																		<TableRow>
+																			<TableHead>日期</TableHead>
+																			<TableHead>交易类型</TableHead>
+																			<TableHead>交易金额</TableHead>
+																			<TableHead>成交份额</TableHead>
+																			<TableHead>单位净值</TableHead>
+																			<TableHead>手续费</TableHead>
+																			<TableHead>操作</TableHead>
+																		</TableRow>
+																	</TableHeader>
+																	<TableBody>
+																		{fundTransactions
+																			.sort((a: Transaction, b: Transaction) => new Date(b.date).getTime() - new Date(a.date).getTime())
+																			.map((transaction: Transaction) => (
+																			<TableRow key={transaction.id}>
+																				<TableCell>{transaction.date}</TableCell>
+																				<TableCell>
+																					<Badge variant={transaction.type === '买入' ? 'default' : 'secondary'}>
+																						{transaction.type}
+																					</Badge>
+																				</TableCell>
+																				<TableCell>{formatCurrency(transaction.amount)}</TableCell>
+																				<TableCell>{transaction.shares.toFixed(2)}</TableCell>
+																				<TableCell>{transaction.unitPrice.toFixed(4)}</TableCell>
+																				<TableCell>{formatCurrency(transaction.fee)}</TableCell>
+																				<TableCell>
+																					<Button
+																						size="sm"
+																						variant="ghost"
+																						onClick={() => handleDeleteTransaction(transaction.id)}
+																					>
+																						<Trash2 className="h-3 w-3" />
+																					</Button>
+																				</TableCell>
+																			</TableRow>
+																		))}
+																	</TableBody>
+																</Table>
+															</TabsContent>
+														)
+													})}
+												</Tabs>
+											)
+										}
+									})()}
+								</div>
 							)}
 						</CardContent>
 					</Card>
