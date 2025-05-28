@@ -47,6 +47,20 @@ interface FundState {
   deleteTransaction: (id: string) => void
   calculateHoldings: () => void
   getTransactionsByFund: (fundCode: string) => Transaction[]
+  
+  // 新增：数据同步方法
+  importData: (data: {
+    transactions: Transaction[]
+    holdings: FundHolding[]
+    accountSummary: AccountSummary
+    fundPrices: Record<string, number>
+  }) => void
+  exportData: () => {
+    transactions: Transaction[]
+    holdings: FundHolding[]
+    accountSummary: AccountSummary
+    fundPrices: Record<string, number>
+  }
 }
 
 export const useFundStore = create<FundState>()(
@@ -173,6 +187,35 @@ export const useFundStore = create<FundState>()(
 
       getTransactionsByFund: (fundCode) => {
         return get().transactions.filter(t => t.fundCode === fundCode)
+      },
+
+      // 新增：导入数据方法
+      importData: (data) => {
+        set({
+          transactions: data.transactions || [],
+          holdings: data.holdings || [],
+          accountSummary: data.accountSummary || {
+            totalInvestment: 0,
+            totalValue: 0,
+            totalProfit: 0,
+            totalProfitRate: 0
+          },
+          fundPrices: data.fundPrices || {}
+        })
+        
+        // 重新计算持仓以确保数据一致性
+        get().calculateHoldings()
+      },
+
+      // 新增：导出数据方法
+      exportData: () => {
+        const state = get()
+        return {
+          transactions: state.transactions,
+          holdings: state.holdings,
+          accountSummary: state.accountSummary,
+          fundPrices: state.fundPrices
+        }
       }
     }),
     {

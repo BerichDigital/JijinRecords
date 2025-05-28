@@ -15,6 +15,7 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Plus, TrendingUp, TrendingDown, DollarSign, PieChart, Trash2, Edit, Database } from 'lucide-react'
 import type { Transaction } from '@/store/fund'
+import { GoogleDriveSync } from '@/components/GoogleDriveSync'
 
 interface TransactionFormData {
 	fundCode: string
@@ -207,14 +208,14 @@ export default function FundRecordsPage() {
 													<FormItem>
 														<FormLabel>基金名称</FormLabel>
 														<FormControl>
-															<Input placeholder="基金名称" {...field} />
+															<Input placeholder="如: 华夏成长混合" {...field} />
 														</FormControl>
 														<FormMessage />
 													</FormItem>
 												)}
 											/>
 										</div>
-										
+
 										<div className="grid grid-cols-2 gap-4">
 											<FormField
 												control={form.control}
@@ -225,7 +226,7 @@ export default function FundRecordsPage() {
 														<Select onValueChange={field.onChange} defaultValue={field.value}>
 															<FormControl>
 																<SelectTrigger>
-																	<SelectValue />
+																	<SelectValue placeholder="选择交易类型" />
 																</SelectTrigger>
 															</FormControl>
 															<SelectContent>
@@ -252,7 +253,7 @@ export default function FundRecordsPage() {
 												)}
 											/>
 										</div>
-										
+
 										<div className="grid grid-cols-2 gap-4">
 											<FormField
 												control={form.control}
@@ -294,7 +295,7 @@ export default function FundRecordsPage() {
 												)}
 											/>
 										</div>
-										
+
 										<div className="grid grid-cols-2 gap-4">
 											<FormField
 												control={form.control}
@@ -336,12 +337,14 @@ export default function FundRecordsPage() {
 												)}
 											/>
 										</div>
-										
+
 										<div className="flex justify-end gap-2">
 											<Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
 												取消
 											</Button>
-											<Button type="submit">添加记录</Button>
+											<Button type="submit">
+												添加记录
+											</Button>
 										</div>
 									</form>
 								</Form>
@@ -350,124 +353,80 @@ export default function FundRecordsPage() {
 					</div>
 				</div>
 
-				{/* 账户总览 */}
-				<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-					<Card>
-						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-							<CardTitle className="text-sm font-medium">总投入</CardTitle>
-							<DollarSign className="h-4 w-4 text-muted-foreground" />
-						</CardHeader>
-						<CardContent>
-							<div className="text-2xl font-bold">{formatCurrency(accountSummary.totalInvestment)}</div>
-						</CardContent>
-					</Card>
-					
-					<Card>
-						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-							<CardTitle className="text-sm font-medium">当前市值</CardTitle>
-							<PieChart className="h-4 w-4 text-muted-foreground" />
-						</CardHeader>
-						<CardContent>
-							<div className="text-2xl font-bold">{formatCurrency(accountSummary.totalValue)}</div>
-						</CardContent>
-					</Card>
-					
-					<Card>
-						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-							<CardTitle className="text-sm font-medium">总盈亏</CardTitle>
-							{accountSummary.totalProfit >= 0 ? (
-								<TrendingUp className="h-4 w-4 text-green-600" />
-							) : (
-								<TrendingDown className="h-4 w-4 text-red-600" />
-							)}
-						</CardHeader>
-						<CardContent>
-							<div className={`text-2xl font-bold ${accountSummary.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-								{formatCurrency(accountSummary.totalProfit)}
-							</div>
-						</CardContent>
-					</Card>
-					
-					<Card>
-						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-							<CardTitle className="text-sm font-medium">总收益率</CardTitle>
-							{accountSummary.totalProfitRate >= 0 ? (
-								<TrendingUp className="h-4 w-4 text-green-600" />
-							) : (
-								<TrendingDown className="h-4 w-4 text-red-600" />
-							)}
-						</CardHeader>
-						<CardContent>
-							<div className={`text-2xl font-bold ${accountSummary.totalProfitRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-								{formatPercent(accountSummary.totalProfitRate)}
-							</div>
-						</CardContent>
-					</Card>
-				</div>
-
-				{/* 使用指南 - 仅在无数据时显示 */}
-				{transactions.length === 0 && (
-					<Card className="border-dashed">
-						<CardHeader>
-							<CardTitle className="text-center">🎯 开始使用基金投资记录助手</CardTitle>
-							<CardDescription className="text-center">
-								选择以下方式之一开始管理您的基金投资组合
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-								<div className="space-y-4">
-									<h3 className="font-semibold text-lg flex items-center gap-2">
-										<Database className="h-5 w-5 text-blue-600" />
-										体验演示
-									</h3>
-									<p className="text-gray-600">
-										点击"加载示例数据"按钮，系统将自动添加一些示例基金交易记录，让您快速了解系统的功能和界面。
-									</p>
-									<ul className="text-sm text-gray-500 space-y-1">
-										<li>• 包含3只不同类型的基金</li>
-										<li>• 模拟真实的买入交易</li>
-										<li>• 展示盈亏计算效果</li>
-									</ul>
-								</div>
-								
-								<div className="space-y-4">
-									<h3 className="font-semibold text-lg flex items-center gap-2">
-										<Plus className="h-5 w-5 text-green-600" />
-										手动添加
-									</h3>
-									<p className="text-gray-600">
-										点击"添加交易"按钮，手动输入您的真实基金交易记录，开始管理您的投资组合。
-									</p>
-									<ul className="text-sm text-gray-500 space-y-1">
-										<li>• 记录买入/卖出交易</li>
-										<li>• 跟踪投资成本和收益</li>
-										<li>• 实时更新基金净值</li>
-									</ul>
-								</div>
-							</div>
-							
-							<div className="mt-6 p-4 bg-blue-50 rounded-lg">
-								<h4 className="font-medium text-blue-900 mb-2">💡 使用提示</h4>
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
-									<div>
-										<strong>数据安全：</strong>所有数据保存在您的浏览器本地，不会上传到服务器
-									</div>
-									<div>
-										<strong>净值更新：</strong>可以随时手动更新基金净值以获得准确的盈亏计算
-									</div>
-								</div>
-							</div>
-						</CardContent>
-					</Card>
-				)}
-
 				{/* 主要内容区域 */}
-				<Tabs defaultValue="holdings" className="space-y-4">
-					<TabsList>
-						<TabsTrigger value="holdings">持仓明细</TabsTrigger>
+				<Tabs defaultValue="overview" className="space-y-6">
+					<TabsList className="grid w-full grid-cols-4">
+						<TabsTrigger value="overview">投资概览</TabsTrigger>
+						<TabsTrigger value="holdings">持仓详情</TabsTrigger>
 						<TabsTrigger value="transactions">交易记录</TabsTrigger>
+						<TabsTrigger value="sync">数据同步</TabsTrigger>
 					</TabsList>
+					
+					<TabsContent value="overview" className="space-y-4">
+						<Card>
+							<CardHeader>
+								<CardTitle>账户总览</CardTitle>
+								<CardDescription>
+									您的投资账户概览信息
+								</CardDescription>
+							</CardHeader>
+							<CardContent>
+								<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+									<Card>
+										<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+											<CardTitle className="text-sm font-medium">总投入</CardTitle>
+											<DollarSign className="h-4 w-4 text-muted-foreground" />
+										</CardHeader>
+										<CardContent>
+											<div className="text-2xl font-bold">{formatCurrency(accountSummary.totalInvestment)}</div>
+										</CardContent>
+									</Card>
+									
+									<Card>
+										<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+											<CardTitle className="text-sm font-medium">当前市值</CardTitle>
+											<PieChart className="h-4 w-4 text-muted-foreground" />
+										</CardHeader>
+										<CardContent>
+											<div className="text-2xl font-bold">{formatCurrency(accountSummary.totalValue)}</div>
+										</CardContent>
+									</Card>
+									
+									<Card>
+										<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+											<CardTitle className="text-sm font-medium">总盈亏</CardTitle>
+											{accountSummary.totalProfit >= 0 ? (
+												<TrendingUp className="h-4 w-4 text-green-600" />
+											) : (
+												<TrendingDown className="h-4 w-4 text-red-600" />
+											)}
+										</CardHeader>
+										<CardContent>
+											<div className={`text-2xl font-bold ${accountSummary.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+												{formatCurrency(accountSummary.totalProfit)}
+											</div>
+										</CardContent>
+									</Card>
+									
+									<Card>
+										<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+											<CardTitle className="text-sm font-medium">总收益率</CardTitle>
+											{accountSummary.totalProfitRate >= 0 ? (
+												<TrendingUp className="h-4 w-4 text-green-600" />
+											) : (
+												<TrendingDown className="h-4 w-4 text-red-600" />
+											)}
+										</CardHeader>
+										<CardContent>
+											<div className={`text-2xl font-bold ${accountSummary.totalProfitRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+												{formatPercent(accountSummary.totalProfitRate)}
+											</div>
+										</CardContent>
+									</Card>
+								</div>
+							</CardContent>
+						</Card>
+					</TabsContent>
 					
 					<TabsContent value="holdings" className="space-y-4">
 						<Card>
@@ -637,6 +596,10 @@ export default function FundRecordsPage() {
 								)}
 							</CardContent>
 						</Card>
+					</TabsContent>
+					
+					<TabsContent value="sync" className="space-y-6">
+						<GoogleDriveSync />
 					</TabsContent>
 				</Tabs>
 			</div>
