@@ -220,7 +220,13 @@ export const useFundStore = create<FundState>()(
     }),
     {
       name: 'fund-storage',
-      skipHydration: true, // 跳过服务器端水合，避免 SSR 问题
+      // 移除 skipHydration，让数据正常加载
+      partialize: (state) => ({
+        transactions: state.transactions,
+        holdings: state.holdings,
+        accountSummary: state.accountSummary,
+        fundPrices: state.fundPrices
+      })
     }
   )
 ) 

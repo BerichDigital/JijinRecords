@@ -1,0 +1,600 @@
+From 9e153f90e505ada577f42022ebfdde9db9505947 Mon Sep 17 00:00:00 2001
+From: BerichDigital <berichdigital@gmail.com>
+Date: Wed, 28 May 2025 14:06:45 +0800
+Subject: [PATCH] =?UTF-8?q?=E4=BF=AE=E5=A4=8D=E5=A4=9A=E8=AE=BE=E5=A4=87?=
+ =?UTF-8?q?=E6=95=B0=E6=8D=AE=E5=90=8C=E6=AD=A5=E9=97=AE=E9=A2=98=20-=20?=
+ =?UTF-8?q?=E9=87=8D=E6=9E=84=E4=BA=91=E7=AB=AF=E5=90=8C=E6=AD=A5=E9=80=BB?=
+ =?UTF-8?q?=E8=BE=91=EF=BC=8C=E4=BD=BF=E7=94=A8=E5=9F=BA=E4=BA=8EAPI?=
+ =?UTF-8?q?=E5=AF=86=E9=92=A5=E7=9A=84=E5=9B=BA=E5=AE=9AbinId=E7=94=9F?=
+ =?UTF-8?q?=E6=88=90=E7=AD=96=E7=95=A5=20-=20=E7=A1=AE=E4=BF=9D=E6=89=80?=
+ =?UTF-8?q?=E6=9C=89=E4=BD=BF=E7=94=A8=E7=9B=B8=E5=90=8CAPI=E5=AF=86?=
+ =?UTF-8?q?=E9=92=A5=E7=9A=84=E8=AE=BE=E5=A4=87=E8=AE=BF=E9=97=AE=E5=90=8C?=
+ =?UTF-8?q?=E4=B8=80=E4=B8=AA=E6=95=B0=E6=8D=AE=E5=AD=98=E5=82=A8=20-=20?=
+ =?UTF-8?q?=E6=94=B9=E8=BF=9B=E9=94=99=E8=AF=AF=E5=A4=84=E7=90=86=E5=92=8C?=
+ =?UTF-8?q?=E8=BF=9E=E6=8E=A5=E6=B5=8B=E8=AF=95=E5=8A=9F=E8=83=BD=20-=20?=
+ =?UTF-8?q?=E6=9B=B4=E6=96=B0README=E6=96=87=E6=A1=A3=EF=BC=8C=E6=B7=BB?=
+ =?UTF-8?q?=E5=8A=A0=E8=AF=A6=E7=BB=86=E7=9A=84=E5=90=8C=E6=AD=A5=E4=BD=BF?=
+ =?UTF-8?q?=E7=94=A8=E8=AF=B4=E6=98=8E=E5=92=8C=E6=95=85=E9=9A=9C=E6=8E=92?=
+ =?UTF-8?q?=E9=99=A4=E6=8C=87=E5=8D=97?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ README.md                    | 193 +++++++++++++++++++----------------
+ src/components/CloudSync.tsx |  41 +++++---
+ src/lib/cloud-sync.ts        | 180 +++++++++++++++++++++++++-------
+ 3 files changed, 279 insertions(+), 135 deletions(-)
+
+diff --git a/README.md b/README.md
+index cb87549..93a56fb 100644
+--- a/README.md
++++ b/README.md
+@@ -1,145 +1,157 @@
+ # 基金投资记录助手
+ 
+-一个简单易用的基金投资记录管理工具，帮助您跟踪基金投资组合的表现。
++一个简洁易用的基金投资记录管理工具，支持多设备数据同步。
+ 
+ ## 功能特点
+ 
+-- 📊 **投资概览**：查看总投入、当前市值、总盈亏和收益率
+-- 💼 **持仓管理**：详细的基金持仓信息和实时盈亏计算
+-- 📝 **交易记录**：完整的买入卖出交易历史
+-- ☁️ **云端同步**：支持 JSONBin.io 免费云端数据同步，多设备访问
+-- 🔄 **实时更新**：手动更新基金净值，获得准确的收益计算
+-- 💾 **本地存储**：数据安全保存在浏览器本地
++- 📊 **投资概览**: 实时显示总投入、市值、盈亏和收益率
++- 💼 **持仓管理**: 详细记录每只基金的持仓信息
++- 📝 **交易记录**: 完整的买入卖出历史记录
++- ☁️ **云端同步**: 多设备间自动同步数据
++- 💾 **本地存储**: 数据安全保存在浏览器本地
+ 
+ ## 快速开始
+ 
+-### 1. 安装依赖
++### 安装依赖
+ 
+ ```bash
+ npm install
+ ```
+ 
+-### 2. 启动开发服务器
++### 启动开发服务器
+ 
+ ```bash
+ npm run dev
+ ```
+ 
+-### 3. 访问应用
++访问 [http://localhost:3000](http://localhost:3000) 开始使用。
+ 
+-打开浏览器访问 [http://localhost:3000](http://localhost:3000)
++## 数据同步功能
+ 
+-## 云端同步设置
++### 首次配置
+ 
+-要使用云端数据同步功能，您需要获取免费的 JSONBin.io API 密钥：
++1. **获取 API 密钥**
++   - 访问 [JSONBin.io](https://jsonbin.io)
++   - 免费注册账户
++   - 在控制台中找到 "API Keys"
++   - 复制 "X-Master-Key" 密钥
+ 
+-### 步骤 1：注册 JSONBin.io 账户
++2. **配置同步**
++   - 点击页面右上角的"数据同步"按钮
++   - 输入您的 API 密钥
++   - 点击"保存配置"
+ 
+-1. 访问 [JSONBin.io](https://jsonbin.io)
+-2. 点击 "Sign Up" 免费注册账户
+-3. 验证邮箱并登录
++### 多设备同步
+ 
+-### 步骤 2：获取 API 密钥
++**重要**: 所有设备必须使用相同的 API 密钥才能同步数据！
+ 
+-1. 登录后进入控制台
+-2. 在左侧菜单中找到 "API Keys"
+-3. 复制 "X-Master-Key" 密钥
++#### 设备A（首次设置）
++1. 配置 API 密钥
++2. 添加一些基金数据
++3. 点击"上传到云端"
+ 
+-### 步骤 3：配置应用
++#### 设备B（同步数据）
++1. 使用相同的 API 密钥进行配置
++2. 点击"从云端下载"
++3. 数据将自动同步到本设备
+ 
+-1. 在应用中点击"数据同步"标签页
+-2. 点击"配置 API"按钮
+-3. 输入您的 API 密钥
+-4. 保存配置
++### 同步策略
+ 
+-### 步骤 4：开始同步
++- **上传**: 将当前设备的数据保存到云端
++- **下载**: 从云端获取最新数据并覆盖本地数据
++- **自动检测**: 配置时会自动检测云端是否已有数据
+ 
+-1. 使用"上传数据"按钮将本地数据保存到云端
+-2. 在其他设备上使用"下载数据"按钮获取最新数据
++### 故障排除
+ 
+-## 使用说明
++#### 问题1: 不同设备间数据无法同步
+ 
+-### 添加交易记录
++**原因**: 设备使用了不同的 API 密钥
+ 
+-1. 点击"添加交易"按钮
+-2. 填写基金代码、名称、交易类型等信息
+-3. 提交后系统会自动计算持仓和收益
++**解决方案**:
++1. 确保所有设备使用完全相同的 API 密钥
++2. 在每个设备上重新配置，使用相同的密钥
++3. 先在一个设备上上传数据，再在其他设备上下载
+ 
+-### 更新基金净值
++#### 问题2: 上传失败
+ 
+-1. 在"持仓详情"页面找到要更新的基金
+-2. 点击净值旁边的编辑按钮
+-3. 输入最新净值并确认
++**可能原因**:
++- API 密钥错误
++- 网络连接问题
++- JSONBin.io 服务暂时不可用
+ 
+-### 数据同步
++**解决方案**:
++1. 检查 API 密钥是否正确
++2. 确认网络连接正常
++3. 稍后重试
+ 
+-- **上传数据**：将本地数据保存到云端
+-- **下载数据**：从云端获取最新数据
++#### 问题3: 下载失败
++
++**可能原因**:
++- 云端没有数据
++- API 密钥错误
++- 网络连接问题
++
++**解决方案**:
++1. 确认已在其他设备上传过数据
++2. 检查 API 密钥是否与上传设备一致
++3. 确认网络连接正常
++
++### 数据安全
++
++- 数据通过 HTTPS 加密传输
++- JSONBin.io 提供安全的数据存储
++- API 密钥仅存储在本地浏览器中
++- 建议定期备份重要数据
++
++### 服务限制
++
++JSONBin.io 免费账户限制:
++- 每月 10,000 次 API 调用
++- 单个 bin 最大 100KB
++- 对于个人使用完全足够
+ 
+ ## 技术栈
+ 
+-- **前端框架**：Next.js 15 + React 19
+-- **UI 组件**：shadcn/ui + Tailwind CSS
+-- **状态管理**：Zustand
+-- **表单处理**：React Hook Form
+-- **云端同步**：JSONBin.io API
+-- **通知系统**：Sonner
++- **框架**: Next.js 15 + React 19
++- **样式**: Tailwind CSS + shadcn/ui
++- **状态管理**: Zustand
++- **云端存储**: JSONBin.io
++- **通知**: Sonner
++- **图标**: Lucide React
+ 
+-## 项目结构
++## 开发
++
++### 项目结构
+ 
+ ```
+ src/
+-├── app/                 # Next.js 应用页面
++├── app/                 # Next.js App Router
+ ├── components/          # React 组件
+ │   ├── ui/             # shadcn/ui 组件
+-│   └── CloudSync.tsx   # 云端同步组件
++│   └── CloudSync.tsx   # 数据同步组件
+ ├── lib/                # 工具库
+-│   └── cloud-sync.ts   # 云端同步 API 封装
++│   └── cloud-sync.ts   # 云端同步逻辑
+ └── store/              # Zustand 状态管理
+     └── fund.ts         # 基金数据状态
+ ```
+ 
+-## 数据安全
+-
+-- 所有数据默认保存在浏览器本地存储中
+-- 云端同步是可选功能，使用免费的 JSONBin.io 服务
+-- API 密钥保存在本地，不会上传到服务器
+-- 支持随时导出和备份数据
+-
+-## 云端服务说明
+-
+-### JSONBin.io 免费额度
+-
+-- 每月 10,000 次免费 API 调用
+-- 每个 Bin 最大 100KB 存储空间
+-- 无需信用卡，完全免费使用
+-- 适合个人项目和小型应用
++### 添加新功能
+ 
+-### 数据存储
++1. 在 `src/store/fund.ts` 中添加新的状态
++2. 在相应组件中使用状态
++3. 更新 `cloud-sync.ts` 中的数据类型定义
+ 
+-- 数据以 JSON 格式存储在云端
+-- 自动版本管理和备份
+-- 支持实时同步和冲突检测
++## 部署
+ 
+-## 开发
+-
+-### 构建生产版本
+-
+-```bash
+-npm run build
+-```
+-
+-### 代码检查
++### Vercel 部署
+ 
+-```bash
+-npm run check
+-```
++1. 将代码推送到 GitHub
++2. 在 Vercel 中导入项目
++3. 自动部署完成
+ 
+-### 类型检查
++### 其他平台
+ 
+-```bash
+-npm run typecheck
+-```
++项目是标准的 Next.js 应用，可以部署到任何支持 Node.js 的平台。
+ 
+ ## 许可证
+ 
+@@ -147,4 +159,11 @@ MIT License
+ 
+ ## 贡献
+ 
+-欢迎提交 Issue 和 Pull Request！
+\ No newline at end of file
++欢迎提交 Issue 和 Pull Request！
++
++## 更新日志
++
++### v1.0.0
++- 基础功能实现
++- 多设备数据同步
++- JSONBin.io 集成
+\ No newline at end of file
+diff --git a/src/components/CloudSync.tsx b/src/components/CloudSync.tsx
+index 16c66b3..f1ff030 100644
+--- a/src/components/CloudSync.tsx
++++ b/src/components/CloudSync.tsx
+@@ -50,19 +50,36 @@ export function CloudSync() {
+       return
+     }
+ 
+-    const config: CloudSyncConfig = {
+-      apiKey: apiKey.trim()
+-    }
++    try {
++      const config: CloudSyncConfig = {
++        apiKey: apiKey.trim()
++      }
+ 
+-    cloudSync.setConfig(config)
+-    setIsConfigured(true)
+-    setShowConfig(false)
+-    toast.success('配置已保存！现在可以开始同步数据了')
+-    
+-    // 重新加载云端信息
+-    setTimeout(() => {
+-      loadCloudInfo()
+-    }, 500)
++      cloudSync.setConfig(config)
++      setIsConfigured(true)
++      setShowConfig(false)
++      
++      // 测试连接
++      toast.loading('正在测试连接...', { id: 'test-connection' })
++      
++      const hasData = await cloudSync.hasCloudData()
++      
++      toast.dismiss('test-connection')
++      
++      if (hasData) {
++        toast.success('配置成功！检测到云端已有数据，可以下载同步')
++      } else {
++        toast.success('配置成功！云端暂无数据，可以上传本地数据')
++      }
++      
++      // 重新加载云端信息
++      setTimeout(() => {
++        loadCloudInfo()
++      }, 500)
++    } catch (error) {
++      console.error('配置失败:', error)
++      toast.error('配置失败，请检查 API 密钥是否正确')
++    }
+   }
+ 
+   const handleUpload = async () => {
+diff --git a/src/lib/cloud-sync.ts b/src/lib/cloud-sync.ts
+index 0f511b0..f9096a2 100644
+--- a/src/lib/cloud-sync.ts
++++ b/src/lib/cloud-sync.ts
+@@ -48,42 +48,126 @@ class CloudSync {
+     return !!(this.config?.apiKey)
+   }
+ 
+-  // 上传数据到云端
+-  async uploadData(data: FundData): Promise<boolean> {
++  // 生成基于API密钥的固定binId
++  private generateBinId(apiKey: string): string {
++    // 使用API密钥的一部分生成一致的binId
++    // 这确保所有使用相同API密钥的设备都会使用同一个binId
++    const hash = this.simpleHash(apiKey + 'jijin-records')
++    return hash.substring(0, 24) // JSONBin.io的binId长度通常是24位
++  }
++
++  // 简单的哈希函数
++  private simpleHash(str: string): string {
++    let hash = 0
++    for (let i = 0; i < str.length; i++) {
++      const char = str.charCodeAt(i)
++      hash = ((hash << 5) - hash) + char
++      hash = hash & hash // 转换为32位整数
++    }
++    return Math.abs(hash).toString(16).padStart(24, '0')
++  }
++
++  // 确保bin存在，如果不存在则创建
++  private async ensureBinExists(): Promise<boolean> {
+     if (!this.config?.apiKey) {
+-      throw new Error('请先设置 API 密钥')
++      return false
+     }
+ 
++    // 生成固定的binId
++    const binId = this.generateBinId(this.config.apiKey)
++    
+     try {
+-      const url = this.config.binId 
+-        ? `${this.baseUrl}/b/${this.config.binId}`
+-        : `${this.baseUrl}/b`
++      // 首先检查bin是否存在
++      const checkResponse = await fetch(`${this.baseUrl}/b/${binId}`, {
++        method: 'HEAD',
++        headers: {
++          'X-Master-Key': this.config.apiKey
++        }
++      })
+ 
+-      const method = this.config.binId ? 'PUT' : 'POST'
++      if (checkResponse.ok) {
++        // bin存在，保存binId
++        this.config.binId = binId
++        this.setConfig(this.config)
++        return true
++      }
+ 
+-      const response = await fetch(url, {
+-        method,
++      // bin不存在，创建新的bin
++      const createResponse = await fetch(`${this.baseUrl}/b`, {
++        method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+           'X-Master-Key': this.config.apiKey,
+-          'X-Bin-Name': 'jijin-records-data'
++          'X-Bin-Name': 'jijin-records-shared-data'
+         },
+-        body: JSON.stringify(data)
++        body: JSON.stringify({
++          _metadata: {
++            appName: "基金投资记录助手",
++            version: "1.0.0",
++            created: new Date().toISOString()
++          },
++          transactions: [],
++          holdings: [],
++          accountSummary: {
++            totalInvestment: 0,
++            totalValue: 0,
++            totalProfit: 0,
++            totalProfitRate: 0
++          },
++          fundPrices: {}
++        })
+       })
+ 
+-      if (response.ok) {
+-        const result = await response.json()
+-        
+-        // 如果是首次创建，保存 bin ID
+-        if (!this.config.binId && result.metadata?.id) {
+-          this.config.binId = result.metadata.id
+-          this.setConfig(this.config)
+-        }
+-        
++      if (createResponse.ok) {
++        const result = await createResponse.json()
++        this.config.binId = result.metadata?.id || binId
++        this.setConfig(this.config)
+         return true
+       }
+-      
++
++      return false
++    } catch (error) {
++      console.error('确保bin存在失败:', error)
+       return false
++    }
++  }
++
++  // 上传数据到云端
++  async uploadData(data: FundData): Promise<boolean> {
++    if (!this.config?.apiKey) {
++      throw new Error('请先设置 API 密钥')
++    }
++
++    try {
++      // 确保bin存在
++      const binExists = await this.ensureBinExists()
++      if (!binExists || !this.config.binId) {
++        throw new Error('无法创建或访问数据存储')
++      }
++
++      const uploadData = {
++        _metadata: {
++          appName: "基金投资记录助手",
++          version: "1.0.0",
++          lastUpdated: new Date().toISOString(),
++          deviceInfo: {
++            userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'Unknown',
++            timestamp: Date.now()
++          }
++        },
++        ...data
++      }
++
++      const response = await fetch(`${this.baseUrl}/b/${this.config.binId}`, {
++        method: 'PUT',
++        headers: {
++          'Content-Type': 'application/json',
++          'X-Master-Key': this.config.apiKey
++        },
++        body: JSON.stringify(uploadData)
++      })
++
++      return response.ok
+     } catch (error) {
+       console.error('上传数据失败:', error)
+       return false
+@@ -92,11 +176,28 @@ class CloudSync {
+ 
+   // 从云端下载数据
+   async downloadData(): Promise<FundData | null> {
+-    if (!this.config?.apiKey || !this.config?.binId) {
+-      throw new Error('请先设置 API 密钥或尚未上传过数据')
++    if (!this.config?.apiKey) {
++      throw new Error('请先设置 API 密钥')
+     }
+ 
+     try {
++      // 确保bin存在
++      const binExists = await this.ensureBinExists()
++      if (!binExists || !this.config.binId) {
++        // 如果bin不存在，返回空数据
++        return {
++          transactions: [],
++          holdings: [],
++          accountSummary: {
++            totalInvestment: 0,
++            totalValue: 0,
++            totalProfit: 0,
++            totalProfitRate: 0
++          },
++          fundPrices: {}
++        }
++      }
++
+       const response = await fetch(`${this.baseUrl}/b/${this.config.binId}/latest`, {
+         headers: {
+           'X-Master-Key': this.config.apiKey
+@@ -105,7 +206,11 @@ class CloudSync {
+ 
+       if (response.ok) {
+         const result = await response.json()
+-        return result.record
++        const data = result.record
++        
++        // 移除元数据，只返回基金数据
++        const { _metadata, ...fundData } = data
++        return fundData
+       }
+       
+       return null
+@@ -117,19 +222,13 @@ class CloudSync {
+ 
+   // 检查云端是否有数据
+   async hasCloudData(): Promise<boolean> {
+-    if (!this.config?.apiKey || !this.config?.binId) {
++    if (!this.config?.apiKey) {
+       return false
+     }
+ 
+     try {
+-      const response = await fetch(`${this.baseUrl}/b/${this.config.binId}`, {
+-        method: 'HEAD',
+-        headers: {
+-          'X-Master-Key': this.config.apiKey
+-        }
+-      })
+-
+-      return response.ok
++      const binExists = await this.ensureBinExists()
++      return binExists
+     } catch (error) {
+       return false
+     }
+@@ -137,11 +236,16 @@ class CloudSync {
+ 
+   // 获取云端数据信息
+   async getCloudDataInfo(): Promise<any> {
+-    if (!this.config?.apiKey || !this.config?.binId) {
++    if (!this.config?.apiKey) {
+       return null
+     }
+ 
+     try {
++      const binExists = await this.ensureBinExists()
++      if (!binExists || !this.config.binId) {
++        return null
++      }
++
+       const response = await fetch(`${this.baseUrl}/b/${this.config.binId}`, {
+         headers: {
+           'X-Master-Key': this.config.apiKey
+@@ -150,9 +254,13 @@ class CloudSync {
+ 
+       if (response.ok) {
+         const result = await response.json()
++        const metadata = result.record?._metadata
+         return {
+-          lastUpdated: result.metadata?.createdAt,
+-          size: JSON.stringify(result.record).length
++          lastUpdated: metadata?.lastUpdated || result.metadata?.createdAt,
++          size: JSON.stringify(result.record).length,
++          binId: this.config.binId,
++          deviceInfo: metadata?.deviceInfo,
++          appVersion: metadata?.version
+         }
+       }
+       
+-- 
+2.45.2.windows.1
+

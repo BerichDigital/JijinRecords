@@ -18,6 +18,7 @@ export function CloudSync() {
   const [isLoading, setIsLoading] = useState(false)
   const [showConfig, setShowConfig] = useState(false)
   const [cloudInfo, setCloudInfo] = useState<any>(null)
+  const [isHydrated, setIsHydrated] = useState(false)
   
   // API 配置状态
   const [apiKey, setApiKey] = useState('')
@@ -26,6 +27,9 @@ export function CloudSync() {
   const { transactions, holdings, accountSummary, fundPrices, importData } = useFundStore()
 
   useEffect(() => {
+    // 等待客户端hydration完成
+    setIsHydrated(true)
+    
     // 检查是否已配置
     const status = cloudSync.getConfigStatus()
     setIsConfigured(status.isConfigured)
@@ -83,6 +87,11 @@ export function CloudSync() {
   }
 
   const handleUpload = async () => {
+    if (!isHydrated) {
+      toast.error('数据还在加载中，请稍后再试')
+      return
+    }
+
     try {
       setIsLoading(true)
       const data: FundData = {
@@ -92,9 +101,22 @@ export function CloudSync() {
         fundPrices
       }
       
+      // 添加调试信息
+      console.log('准备上传的数据:', data)
+      console.log('transactions数量:', transactions.length)
+      console.log('holdings数量:', holdings.length)
+      console.log('accountSummary:', accountSummary)
+      console.log('isHydrated:', isHydrated)
+      
+      // 检查数据是否为空
+      if (transactions.length === 0 && holdings.length === 0) {
+        toast.warning('当前没有数据可上传，请先添加一些基金交易记录')
+        return
+      }
+      
       const success = await cloudSync.uploadData(data)
       if (success) {
-        toast.success('数据已成功上传到云端！')
+        toast.success(`数据已成功上传到云端！包含 ${transactions.length} 条交易记录，${holdings.length} 个持仓`)
         await loadCloudInfo()
       } else {
         toast.error('上传失败，请检查 API 密钥是否正确')
@@ -173,6 +195,21 @@ export function CloudSync() {
         {/* 已配置状态 - 显示同步操作 */}
         {isConfigured && (
           <div className="space-y-4">
+            {/* 本地数据状态 */}
+            {isHydrated && (
+              <div className="bg-green-50 p-3 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Info className="h-4 w-4 text-green-600" />
+                  <span className="font-medium text-green-800">本地数据</span>
+                </div>
+                <div className="text-sm text-green-700">
+                  <p>交易记录: {transactions.length} 条</p>
+                  <p>持仓基金: {holdings.length} 个</p>
+                  <p>总投入: ¥{accountSummary.totalInvestment.toFixed(2)}</p>
+                </div>
+              </div>
+            )}
+            
             {/* 云端数据信息 */}
             {cloudInfo && (
               <div className="bg-blue-50 p-3 rounded-lg">
