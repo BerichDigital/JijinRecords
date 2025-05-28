@@ -32,6 +32,7 @@ export interface FundHolding {
 export interface AccountSummary {
   totalInvestment: number // 总投入
   totalValue: number // 当前总市值
+  totalFees: number // 总手续费
   totalProfit: number // 总盈亏
   totalProfitRate: number // 总收益率
 }
@@ -72,6 +73,7 @@ export const useFundStore = create<FundState>()(
       accountSummary: {
         totalInvestment: 0,
         totalValue: 0,
+        totalFees: 0,
         totalProfit: 0,
         totalProfitRate: 0
       },
@@ -172,14 +174,23 @@ export const useFundStore = create<FundState>()(
         // 计算账户总览
         const totalInvestment = holdings.reduce((sum, h) => sum + h.totalCost, 0)
         const totalValue = holdings.reduce((sum, h) => sum + h.currentValue, 0)
-        const totalProfit = totalValue - totalInvestment
-        const totalProfitRate = totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0
+        
+        // 计算总手续费：所有交易手续费的总和
+        const totalFees = transactions.reduce((sum, t) => sum + t.fee, 0)
+        
+        // 总盈亏 = 当前市值 - 总投入 - 总手续费
+        const totalProfit = totalValue - totalInvestment - totalFees
+        
+        // 总收益率 = 总盈亏 ÷ (当前市值 - 总盈亏)
+        const denominator = totalValue - totalProfit
+        const totalProfitRate = denominator > 0 ? (totalProfit / denominator) * 100 : 0
 
         set({
           holdings,
           accountSummary: {
             totalInvestment,
             totalValue,
+            totalFees,
             totalProfit,
             totalProfitRate
           }
@@ -198,6 +209,7 @@ export const useFundStore = create<FundState>()(
           accountSummary: data.accountSummary || {
             totalInvestment: 0,
             totalValue: 0,
+            totalFees: 0,
             totalProfit: 0,
             totalProfitRate: 0
           },

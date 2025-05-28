@@ -148,6 +148,7 @@ export function DataManager() {
           accountSummary: {
             totalInvestment: 0,
             totalValue: 0,
+            totalFees: 0,
             totalProfit: 0,
             totalProfitRate: 0
           },
@@ -185,6 +186,7 @@ export function DataManager() {
       accountSummary: {
         totalInvestment: 0,
         totalValue: 0,
+        totalFees: 0,
         totalProfit: 0,
         totalProfitRate: 0
       },

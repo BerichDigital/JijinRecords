@@ -377,7 +377,7 @@ export default function FundRecordsPage() {
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
-						<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+						<div className="grid grid-cols-1 md:grid-cols-5 gap-4">
 							<Card>
 								<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 									<CardTitle className="text-sm font-medium">总投入</CardTitle>
@@ -395,6 +395,16 @@ export default function FundRecordsPage() {
 								</CardHeader>
 								<CardContent>
 									<div className="text-2xl font-bold">{formatCurrency(accountSummary.totalValue)}</div>
+								</CardContent>
+							</Card>
+							
+							<Card>
+								<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+									<CardTitle className="text-sm font-medium">总手续费</CardTitle>
+									<DollarSign className="h-4 w-4 text-orange-600" />
+								</CardHeader>
+								<CardContent>
+									<div className="text-2xl font-bold text-orange-600">{formatCurrency(accountSummary.totalFees)}</div>
 								</CardContent>
 							</Card>
 							
