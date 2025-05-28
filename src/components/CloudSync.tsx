@@ -132,13 +132,25 @@ export function CloudSync() {
   const handleDownload = async () => {
     try {
       setIsLoading(true)
+      console.log('开始下载数据...')
+      
       const data = await cloudSync.downloadData()
+      console.log('下载完成，获得数据:', data)
       
       if (data) {
+        console.log('准备导入数据到store:', {
+          transactions: data.transactions?.length || 0,
+          holdings: data.holdings?.length || 0,
+          accountSummary: data.accountSummary
+        })
+        
         // 使用 zustand store 的 importData 方法导入数据
         importData(data)
-        toast.success('数据已从云端下载并同步！')
+        
+        console.log('数据导入完成')
+        toast.success(`数据已从云端下载并同步！包含 ${data.transactions?.length || 0} 条交易记录`)
       } else {
+        console.log('云端没有数据')
         toast.info('云端没有找到数据，请先上传数据')
       }
     } catch (error) {

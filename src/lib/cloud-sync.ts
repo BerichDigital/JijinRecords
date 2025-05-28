@@ -73,12 +73,35 @@ class CloudSync {
       return false
     }
 
-    // 生成固定的binId
-    const binId = this.generateBinId(this.config.apiKey)
+    // 如果已经有binId，直接检查是否存在
+    if (this.config.binId) {
+      try {
+        const checkResponse = await fetch(`${this.baseUrl}/b/${this.config.binId}`, {
+          method: 'HEAD',
+          headers: {
+            'X-Master-Key': this.config.apiKey
+          }
+        })
+
+        if (checkResponse.ok) {
+          return true
+        }
+        // 如果bin不存在，清除无效的binId
+        this.config.binId = undefined
+        this.setConfig(this.config)
+      } catch (error) {
+        console.error('检查现有bin失败:', error)
+        this.config.binId = undefined
+        this.setConfig(this.config)
+      }
+    }
+
+    // 生成基于API密钥的固定binId
+    const fixedBinId = this.generateBinId(this.config.apiKey)
     
     try {
-      // 首先检查bin是否存在
-      const checkResponse = await fetch(`${this.baseUrl}/b/${binId}`, {
+      // 首先尝试使用固定的binId检查是否存在
+      const checkResponse = await fetch(`${this.baseUrl}/b/${fixedBinId}`, {
         method: 'HEAD',
         headers: {
           'X-Master-Key': this.config.apiKey
@@ -87,24 +110,26 @@ class CloudSync {
 
       if (checkResponse.ok) {
         // bin存在，保存binId
-        this.config.binId = binId
+        this.config.binId = fixedBinId
         this.setConfig(this.config)
         return true
       }
 
-      // bin不存在，创建新的bin
+      // bin不存在，尝试创建一个新的bin
       const createResponse = await fetch(`${this.baseUrl}/b`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Master-Key': this.config.apiKey,
-          'X-Bin-Name': 'jijin-records-shared-data'
+          'X-Bin-Name': `jijin-records-${this.simpleHash(this.config.apiKey).substring(0, 8)}`
         },
         body: JSON.stringify({
           _metadata: {
             appName: "基金投资记录助手",
             version: "1.0.0",
-            created: new Date().toISOString()
+            created: new Date().toISOString(),
+            apiKeyHash: this.simpleHash(this.config.apiKey).substring(0, 8),
+            fixedBinId: fixedBinId
           },
           transactions: [],
           holdings: [],
@@ -120,14 +145,37 @@ class CloudSync {
 
       if (createResponse.ok) {
         const result = await createResponse.json()
-        this.config.binId = result.metadata?.id || binId
+        const actualBinId = result.metadata?.id
+        
+        // 如果创建的binId和我们期望的不同，我们需要使用实际的binId
+        this.config.binId = actualBinId
         this.setConfig(this.config)
+        
+        // 同时尝试创建一个指向实际bin的"别名"记录
+        try {
+          await fetch(`${this.baseUrl}/b`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Master-Key': this.config.apiKey,
+              'X-Bin-Name': `jijin-alias-${this.simpleHash(this.config.apiKey).substring(0, 8)}`
+            },
+            body: JSON.stringify({
+              _alias: true,
+              actualBinId: actualBinId,
+              apiKeyHash: this.simpleHash(this.config.apiKey).substring(0, 8)
+            })
+          })
+        } catch (aliasError) {
+          console.log('创建别名失败，但不影响主要功能:', aliasError)
+        }
+        
         return true
       }
 
       return false
     } catch (error) {
-      console.error('确保bin存在失败:', error)
+      console.error('创建bin失败:', error)
       return false
     }
   }
@@ -181,9 +229,17 @@ class CloudSync {
     }
 
     try {
+      console.log('开始下载数据，当前配置:', {
+        hasApiKey: !!this.config.apiKey,
+        binId: this.config.binId
+      })
+
       // 确保bin存在
       const binExists = await this.ensureBinExists()
+      console.log('bin存在检查结果:', binExists, '当前binId:', this.config.binId)
+      
       if (!binExists || !this.config.binId) {
+        console.log('bin不存在，返回空数据')
         // 如果bin不存在，返回空数据
         return {
           transactions: [],
@@ -198,19 +254,31 @@ class CloudSync {
         }
       }
 
+      console.log('正在从云端下载数据，binId:', this.config.binId)
       const response = await fetch(`${this.baseUrl}/b/${this.config.binId}/latest`, {
         headers: {
           'X-Master-Key': this.config.apiKey
         }
       })
 
+      console.log('下载响应状态:', response.status, response.statusText)
+
       if (response.ok) {
         const result = await response.json()
+        console.log('下载的原始数据:', result)
+        
         const data = result.record
+        console.log('解析后的record数据:', data)
         
         // 移除元数据，只返回基金数据
         const { _metadata, ...fundData } = data
+        console.log('最终返回的基金数据:', fundData)
+        
         return fundData
+      } else {
+        console.error('下载失败，响应状态:', response.status)
+        const errorText = await response.text()
+        console.error('错误详情:', errorText)
       }
       
       return null
