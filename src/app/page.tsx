@@ -483,7 +483,6 @@ export default function FundRecordsPage() {
 											<TableHead>当前市值</TableHead>
 											<TableHead>盈亏金额</TableHead>
 											<TableHead>收益率</TableHead>
-											<TableHead>操作</TableHead>
 										</TableRow>
 									</TableHeader>
 									<TableBody>
@@ -543,18 +542,6 @@ export default function FundRecordsPage() {
 													<Badge variant={holding.profitRate >= 0 ? 'default' : 'destructive'} className={holding.profitRate >= 0 ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}>
 														{formatPercent(holding.profitRate)}
 													</Badge>
-												</TableCell>
-												<TableCell>
-													<Button
-														size="sm"
-														variant="ghost"
-														onClick={() => {
-															setEditingFund(holding.fundCode)
-															setNewPrice(holding.currentPrice.toString())
-														}}
-													>
-														更新现价
-													</Button>
 												</TableCell>
 											</TableRow>
 										))}
@@ -641,13 +628,13 @@ export default function FundRecordsPage() {
 																	<TableCell>{transaction.unitPrice.toFixed(4)}</TableCell>
 																	<TableCell>
 																		{editingFeeId === transaction.id ? (
-																			<div className="flex items-center gap-1">
+																			<div className="flex items-center gap-2">
 																				<Input
 																					type="number"
 																					step="0.01"
 																					value={editingFeeValue}
 																					onChange={(e) => setEditingFeeValue(e.target.value)}
-																					className="w-16 h-6 text-xs"
+																					className="w-20"
 																					onKeyDown={(e) => {
 																						if (e.key === 'Enter') {
 																							handleUpdateFee(transaction.id, editingFeeValue)
@@ -658,24 +645,36 @@ export default function FundRecordsPage() {
 																					}}
 																					autoFocus
 																				/>
-																				<Button
-																					size="sm"
-																					variant="ghost"
-																					className="h-6 w-6 p-0"
+																				<Button 
+																					size="sm" 
 																					onClick={() => handleUpdateFee(transaction.id, editingFeeValue)}
 																				>
-																					✓
+																					确认
+																				</Button>
+																				<Button 
+																					size="sm" 
+																					variant="outline"
+																					onClick={() => {
+																						setEditingFeeId(null)
+																						setEditingFeeValue('')
+																					}}
+																				>
+																					取消
 																				</Button>
 																			</div>
 																		) : (
-																			<div 
-																				className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded"
-																				onClick={() => {
-																					setEditingFeeId(transaction.id)
-																					setEditingFeeValue(transaction.fee.toString())
-																				}}
-																			>
-																				{transaction.fee.toFixed(2)}
+																			<div className="flex items-center gap-2">
+																				<span>{transaction.fee.toFixed(2)}</span>
+																				<Button
+																					size="sm"
+																					variant="ghost"
+																					onClick={() => {
+																						setEditingFeeId(transaction.id)
+																						setEditingFeeValue(transaction.fee.toString())
+																					}}
+																				>
+																					<Edit className="h-3 w-3" />
+																				</Button>
 																			</div>
 																		)}
 																	</TableCell>
@@ -763,13 +762,13 @@ export default function FundRecordsPage() {
 																				<TableCell>{transaction.unitPrice.toFixed(4)}</TableCell>
 																				<TableCell>
 																					{editingFeeId === transaction.id ? (
-																						<div className="flex items-center gap-1">
+																						<div className="flex items-center gap-2">
 																							<Input
 																								type="number"
 																								step="0.01"
 																								value={editingFeeValue}
 																								onChange={(e) => setEditingFeeValue(e.target.value)}
-																								className="w-16 h-6 text-xs"
+																								className="w-20"
 																								onKeyDown={(e) => {
 																									if (e.key === 'Enter') {
 																										handleUpdateFee(transaction.id, editingFeeValue)
@@ -780,24 +779,36 @@ export default function FundRecordsPage() {
 																								}}
 																								autoFocus
 																							/>
-																							<Button
-																								size="sm"
-																								variant="ghost"
-																								className="h-6 w-6 p-0"
+																							<Button 
+																								size="sm" 
 																								onClick={() => handleUpdateFee(transaction.id, editingFeeValue)}
 																							>
-																								✓
+																								确认
+																							</Button>
+																							<Button 
+																								size="sm" 
+																								variant="outline"
+																								onClick={() => {
+																									setEditingFeeId(null)
+																									setEditingFeeValue('')
+																								}}
+																							>
+																								取消
 																							</Button>
 																						</div>
 																					) : (
-																						<div 
-																							className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded"
-																							onClick={() => {
-																								setEditingFeeId(transaction.id)
-																								setEditingFeeValue(transaction.fee.toString())
-																							}}
-																						>
-																								{transaction.fee.toFixed(2)}
+																						<div className="flex items-center gap-2">
+																							<span>{transaction.fee.toFixed(2)}</span>
+																							<Button
+																								size="sm"
+																								variant="ghost"
+																								onClick={() => {
+																									setEditingFeeId(transaction.id)
+																									setEditingFeeValue(transaction.fee.toString())
+																								}}
+																							>
+																									<Edit className="h-3 w-3" />
+																							</Button>
 																						</div>
 																					)}
 																				</TableCell>
