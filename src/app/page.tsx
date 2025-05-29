@@ -456,7 +456,7 @@ export default function FundRecordsPage() {
 						<CardHeader>
 							<CardTitle>当前持仓</CardTitle>
 							<CardDescription>
-								您当前持有的基金及其盈亏情况
+								您当前持有的基金及其盈亏情况，按持仓成本倒序排列
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
@@ -479,7 +479,9 @@ export default function FundRecordsPage() {
 										</TableRow>
 									</TableHeader>
 									<TableBody>
-										{holdings.map((holding) => (
+										{holdings
+											.sort((a, b) => b.totalCost - a.totalCost) // 按持仓成本倒序排列，金额大的在上面
+											.map((holding) => (
 											<TableRow key={holding.fundCode}>
 												<TableCell className="font-medium">{holding.fundCode}</TableCell>
 												<TableCell>{holding.fundName}</TableCell>
@@ -549,7 +551,7 @@ export default function FundRecordsPage() {
 						<CardHeader>
 							<CardTitle>交易记录</CardTitle>
 							<CardDescription>
-								所有基金买入和卖出的历史记录，按基金分类显示
+								所有基金买入和卖出的历史记录，按时间倒序排列（最新记录在上方）
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
