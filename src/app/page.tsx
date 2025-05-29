@@ -26,7 +26,6 @@ interface TransactionFormData {
 	price: number
 	quantity: number
 	amount: number
-	unitPrice: number
 	fee: number
 }
 
@@ -67,18 +66,24 @@ export default function FundRecordsPage() {
 			price: 0,
 			quantity: 0,
 			amount: 0,
-			unitPrice: 0,
 			fee: 0
 		}
 	})
 
-	// 监听价格和数量变化，自动计算交易金额
+	// 监听价格和数量变化，自动计算交易金额和手续费
 	const watchPrice = form.watch('price')
 	const watchQuantity = form.watch('quantity')
+	const watchAmount = form.watch('amount')
 	
 	useEffect(() => {
 		const amount = watchPrice * watchQuantity
 		form.setValue('amount', amount)
+		
+		// 计算手续费：手续费 = max(交易金额 × 0.18‰, 5)
+		const feeRate = 0.00018 // 0.18‰
+		const calculatedFee = amount * feeRate
+		const finalFee = Math.max(calculatedFee, 5)
+		form.setValue('fee', finalFee)
 	}, [watchPrice, watchQuantity, form])
 
 	// 在水合完成前显示加载状态
@@ -94,7 +99,12 @@ export default function FundRecordsPage() {
 	}
 
 	const onSubmit = (data: TransactionFormData) => {
-		addTransaction(data)
+		// 添加unitPrice字段，使用交易价格作为默认值
+		const transactionData = {
+			...data,
+			unitPrice: data.price // 使用交易价格作为单位现价
+		}
+		addTransaction(transactionData)
 		toast.success('交易记录添加成功')
 		setIsAddDialogOpen(false)
 		form.reset()
@@ -318,42 +328,25 @@ export default function FundRecordsPage() {
 												
 												<FormField
 													control={form.control}
-													name="unitPrice"
-													render={({ field }) => (
-														<FormItem>
-															<FormLabel>单位现价</FormLabel>
-															<FormControl>
-																<Input 
-																	type="number" 
-																	step="0.0001"
-																	placeholder="0.0000"
-																	{...field}
-																	onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-																/>
-															</FormControl>
-															<FormMessage />
-														</FormItem>
-													)}
-												/>
-											</div>
-
-											<div className="grid grid-cols-1 gap-4">
-												<FormField
-													control={form.control}
 													name="fee"
 													render={({ field }) => (
 														<FormItem>
-															<FormLabel>手续费</FormLabel>
+															<FormLabel>手续费（自动计算）</FormLabel>
 															<FormControl>
 																<Input 
 																	type="number" 
 																	step="0.01"
 																	placeholder="0.00"
 																	{...field}
-																	onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+																	value={field.value.toFixed(2)}
+																	readOnly
+																	className="bg-gray-50"
 																/>
 															</FormControl>
 															<FormMessage />
+															<p className="text-xs text-gray-500">
+																计算规则：手续费 = max(交易金额 × 0.18‰, 5元)
+															</p>
 														</FormItem>
 													)}
 												/>
@@ -606,7 +599,6 @@ export default function FundRecordsPage() {
 																<TableHead>交易价格</TableHead>
 																<TableHead>交易数量</TableHead>
 																<TableHead>交易金额</TableHead>
-																<TableHead>单位现价</TableHead>
 																<TableHead>手续费</TableHead>
 																<TableHead>操作</TableHead>
 															</TableRow>
@@ -625,7 +617,6 @@ export default function FundRecordsPage() {
 																	<TableCell>{transaction.price.toFixed(4)}</TableCell>
 																	<TableCell>{transaction.quantity.toFixed(2)}</TableCell>
 																	<TableCell>{transaction.amount.toFixed(2)}</TableCell>
-																	<TableCell>{transaction.unitPrice.toFixed(4)}</TableCell>
 																	<TableCell>
 																		{editingFeeId === transaction.id ? (
 																			<div className="flex items-center gap-2">
@@ -740,7 +731,6 @@ export default function FundRecordsPage() {
 																			<TableHead>交易价格</TableHead>
 																			<TableHead>交易数量</TableHead>
 																			<TableHead>交易金额</TableHead>
-																			<TableHead>单位现价</TableHead>
 																			<TableHead>手续费</TableHead>
 																			<TableHead>操作</TableHead>
 																		</TableRow>
@@ -759,7 +749,6 @@ export default function FundRecordsPage() {
 																				<TableCell>{transaction.price.toFixed(4)}</TableCell>
 																				<TableCell>{transaction.quantity.toFixed(2)}</TableCell>
 																				<TableCell>{transaction.amount.toFixed(2)}</TableCell>
-																				<TableCell>{transaction.unitPrice.toFixed(4)}</TableCell>
 																				<TableCell>
 																					{editingFeeId === transaction.id ? (
 																						<div className="flex items-center gap-2">
