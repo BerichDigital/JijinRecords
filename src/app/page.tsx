@@ -62,7 +62,12 @@ export default function FundRecordsPage() {
 			fundCode: '',
 			fundName: '',
 			type: '买入',
-			date: new Date().toISOString().slice(0, 16), // 格式：YYYY-MM-DDTHH:mm
+			date: (() => {
+				// 获取北京时间
+				const now = new Date()
+				const beijingTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }))
+				return beijingTime.toISOString().slice(0, 16) // 格式：YYYY-MM-DDTHH:mm
+			})(),
 			price: 0,
 			quantity: 0,
 			amount: 0,
@@ -99,9 +104,13 @@ export default function FundRecordsPage() {
 	}
 
 	const onSubmit = (data: TransactionFormData) => {
+		// 确保时间按北京时间处理
+		const beijingTime = ensureBeijingTime(data.date)
+		
 		// 添加unitPrice字段，使用交易价格作为默认值
 		const transactionData = {
 			...data,
+			date: beijingTime, // 使用调整后的北京时间
 			unitPrice: data.price // 使用交易价格作为单位现价
 		}
 		addTransaction(transactionData)
@@ -146,6 +155,7 @@ export default function FundRecordsPage() {
 	const formatDateTime = (dateString: string) => {
 		const date = new Date(dateString)
 		return date.toLocaleString('zh-CN', {
+			timeZone: 'Asia/Shanghai', // 明确指定北京时间
 			year: 'numeric',
 			month: '2-digit',
 			day: '2-digit',
@@ -154,6 +164,20 @@ export default function FundRecordsPage() {
 			second: '2-digit',
 			hour12: false
 		})
+	}
+
+	// 确保时间按北京时间处理
+	const ensureBeijingTime = (dateTimeLocal: string) => {
+		// datetime-local输入的值是本地时间，我们需要确保它被正确解释为北京时间
+		const date = new Date(dateTimeLocal)
+		// 如果用户在非北京时区，我们需要调整时间
+		const userTimezoneOffset = date.getTimezoneOffset() // 用户时区偏移（分钟）
+		const beijingTimezoneOffset = -480 // 北京时间是UTC+8，即-480分钟
+		const offsetDiff = userTimezoneOffset - beijingTimezoneOffset
+		
+		// 调整时间差异
+		const adjustedDate = new Date(date.getTime() + offsetDiff * 60000)
+		return adjustedDate.toISOString()
 	}
 
 	return (
@@ -269,6 +293,9 @@ export default function FundRecordsPage() {
 																<Input type="datetime-local" {...field} />
 															</FormControl>
 															<FormMessage />
+															<p className="text-xs text-gray-500">
+																按北京时间记录（UTC+8）
+															</p>
 														</FormItem>
 													)}
 												/>
