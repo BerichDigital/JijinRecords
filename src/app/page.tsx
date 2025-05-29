@@ -13,9 +13,10 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { Plus, TrendingUp, TrendingDown, DollarSign, PieChart, Trash2, Edit, FileText } from 'lucide-react'
+import { Plus, TrendingUp, TrendingDown, DollarSign, PieChart, Trash2, Edit, FileText, RefreshCw } from 'lucide-react'
 import type { Transaction } from '@/store/fund'
 import { DataManager } from '@/components/DataManager'
+import { Label as UILabel } from '@/components/ui/label'
 
 interface TransactionFormData {
 	fundCode: string
@@ -37,13 +38,16 @@ export default function FundRecordsPage() {
 		accountSummary, 
 		addTransaction, 
 		deleteTransaction,
-		updateFundPrice
+		updateFundPrice,
+		updateTransactionFee
 	} = useFundStore()
 	
 	const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
 	const [editingFund, setEditingFund] = useState<string | null>(null)
 	const [newPrice, setNewPrice] = useState('')
 	const [showDataDialog, setShowDataDialog] = useState(false)
+	const [editingFeeId, setEditingFeeId] = useState<string | null>(null)
+	const [editingFeeValue, setEditingFeeValue] = useState<string>('')
 
 	// 处理客户端水合
 	useEffect(() => {
@@ -107,6 +111,13 @@ export default function FundRecordsPage() {
 			setEditingFund(null)
 			setNewPrice('')
 		}
+	}
+
+	const handleUpdateFee = (id: string, value: string) => {
+		updateTransactionFee(id, parseFloat(value))
+		toast.success('手续费更新成功')
+		setEditingFeeId(null)
+		setEditingFeeValue('')
 	}
 
 	const formatCurrency = (amount: number) => {
@@ -308,7 +319,7 @@ export default function FundRecordsPage() {
 													name="unitPrice"
 													render={({ field }) => (
 														<FormItem>
-															<FormLabel>单位净值</FormLabel>
+															<FormLabel>单位现价</FormLabel>
 															<FormControl>
 																<Input 
 																	type="number" 
@@ -466,7 +477,7 @@ export default function FundRecordsPage() {
 											<TableHead>基金名称</TableHead>
 											<TableHead>持仓份额</TableHead>
 											<TableHead>持仓成本</TableHead>
-											<TableHead>当前净值</TableHead>
+											<TableHead>当前现价</TableHead>
 											<TableHead>当前市值</TableHead>
 											<TableHead>盈亏金额</TableHead>
 											<TableHead>收益率</TableHead>
@@ -540,7 +551,7 @@ export default function FundRecordsPage() {
 															setNewPrice(holding.currentPrice.toString())
 														}}
 													>
-														更新净值
+														更新现价
 													</Button>
 												</TableCell>
 											</TableRow>
@@ -606,7 +617,7 @@ export default function FundRecordsPage() {
 																<TableHead>交易价格</TableHead>
 																<TableHead>交易数量</TableHead>
 																<TableHead>交易金额</TableHead>
-																<TableHead>单位净值</TableHead>
+																<TableHead>单位现价</TableHead>
 																<TableHead>手续费</TableHead>
 																<TableHead>操作</TableHead>
 															</TableRow>
@@ -626,7 +637,46 @@ export default function FundRecordsPage() {
 																	<TableCell>{transaction.quantity.toFixed(2)}</TableCell>
 																	<TableCell>{transaction.amount.toFixed(2)}</TableCell>
 																	<TableCell>{transaction.unitPrice.toFixed(4)}</TableCell>
-																	<TableCell>{transaction.fee.toFixed(2)}</TableCell>
+																	<TableCell>
+																		{editingFeeId === transaction.id ? (
+																			<div className="flex items-center gap-1">
+																				<Input
+																					type="number"
+																					step="0.01"
+																					value={editingFeeValue}
+																					onChange={(e) => setEditingFeeValue(e.target.value)}
+																					className="w-16 h-6 text-xs"
+																					onKeyDown={(e) => {
+																						if (e.key === 'Enter') {
+																							handleUpdateFee(transaction.id, editingFeeValue)
+																						} else if (e.key === 'Escape') {
+																							setEditingFeeId(null)
+																							setEditingFeeValue('')
+																						}
+																					}}
+																					autoFocus
+																				/>
+																				<Button
+																					size="sm"
+																					variant="ghost"
+																					className="h-6 w-6 p-0"
+																					onClick={() => handleUpdateFee(transaction.id, editingFeeValue)}
+																				>
+																					✓
+																				</Button>
+																			</div>
+																		) : (
+																			<div 
+																				className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded"
+																				onClick={() => {
+																					setEditingFeeId(transaction.id)
+																					setEditingFeeValue(transaction.fee.toString())
+																				}}
+																			>
+																				{transaction.fee.toFixed(2)}
+																			</div>
+																		)}
+																	</TableCell>
 																	<TableCell>
 																		<Button
 																			size="sm"
@@ -689,7 +739,7 @@ export default function FundRecordsPage() {
 																			<TableHead>交易价格</TableHead>
 																			<TableHead>交易数量</TableHead>
 																			<TableHead>交易金额</TableHead>
-																			<TableHead>单位净值</TableHead>
+																			<TableHead>单位现价</TableHead>
 																			<TableHead>手续费</TableHead>
 																			<TableHead>操作</TableHead>
 																		</TableRow>
@@ -709,7 +759,46 @@ export default function FundRecordsPage() {
 																				<TableCell>{transaction.quantity.toFixed(2)}</TableCell>
 																				<TableCell>{transaction.amount.toFixed(2)}</TableCell>
 																				<TableCell>{transaction.unitPrice.toFixed(4)}</TableCell>
-																				<TableCell>{transaction.fee.toFixed(2)}</TableCell>
+																				<TableCell>
+																					{editingFeeId === transaction.id ? (
+																						<div className="flex items-center gap-1">
+																							<Input
+																								type="number"
+																								step="0.01"
+																								value={editingFeeValue}
+																								onChange={(e) => setEditingFeeValue(e.target.value)}
+																								className="w-16 h-6 text-xs"
+																								onKeyDown={(e) => {
+																									if (e.key === 'Enter') {
+																										handleUpdateFee(transaction.id, editingFeeValue)
+																									} else if (e.key === 'Escape') {
+																										setEditingFeeId(null)
+																										setEditingFeeValue('')
+																									}
+																								}}
+																								autoFocus
+																							/>
+																							<Button
+																								size="sm"
+																								variant="ghost"
+																								className="h-6 w-6 p-0"
+																								onClick={() => handleUpdateFee(transaction.id, editingFeeValue)}
+																							>
+																								✓
+																							</Button>
+																						</div>
+																					) : (
+																						<div 
+																							className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded"
+																							onClick={() => {
+																								setEditingFeeId(transaction.id)
+																								setEditingFeeValue(transaction.fee.toString())
+																							}}
+																						>
+																								{transaction.fee.toFixed(2)}
+																						</div>
+																					)}
+																				</TableCell>
 																				<TableCell>
 																					<Button
 																						size="sm"

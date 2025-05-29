@@ -11,7 +11,7 @@ export interface Transaction {
   price: number // 交易价格
   quantity: number // 交易数量（原来的shares）
   amount: number // 交易金额（计算得出：price × quantity）
-  unitPrice: number // 单位净值（保留用于显示）
+  unitPrice: number // 单位现价（保留用于显示）
   fee: number // 手续费
 }
 
@@ -46,6 +46,7 @@ interface FundState {
   // 操作方法
   addTransaction: (transaction: Omit<Transaction, 'id'>) => void
   updateFundPrice: (fundCode: string, currentPrice: number) => void
+  updateTransactionFee: (transactionId: string, newFee: number) => void
   deleteTransaction: (id: string) => void
   calculateHoldings: () => void
   getTransactionsByFund: (fundCode: string) => Transaction[]
@@ -104,6 +105,17 @@ export const useFundStore = create<FundState>()(
         }))
         
         // 重新计算持仓（会使用新的价格）
+        get().calculateHoldings()
+      },
+
+      updateTransactionFee: (transactionId, newFee) => {
+        set(state => ({
+          transactions: state.transactions.map(t => 
+            t.id === transactionId ? { ...t, fee: newFee } : t
+          )
+        }))
+        
+        // 重新计算持仓
         get().calculateHoldings()
       },
 
