@@ -23,7 +23,7 @@ export function DataManager() {
       
       // 交易记录工作表
       const csvData = transactions.map(t => ({
-        '交易日期': t.date,
+        '交易时间': t.date,
         '基金代码': t.fundCode,
         '基金名称': t.fundName,
         '交易类型': t.type,
@@ -113,7 +113,7 @@ export function DataManager() {
             
             transactions = transactionsData.map((row: any, index: number) => ({
               id: Date.now().toString() + index.toString(),
-              date: row['交易日期'] || '',
+              date: row['交易时间'] || '',
               fundCode: row['基金代码'] || '',
               fundName: row['基金名称'] || '',
               type: row['交易类型'] || '买入',
@@ -296,7 +296,7 @@ export function DataManager() {
                     <ul className="text-blue-700 space-y-1 list-disc list-inside">
                       <li>支持 .xlsx 和 .xls 格式</li>
                       <li>必须包含"交易记录"工作表</li>
-                      <li>列标题：交易日期、基金代码、基金名称、交易类型、交易价格、交易数量、交易金额、单位现价、手续费</li>
+                      <li>列标题：交易时间、基金代码、基金名称、交易类型、交易价格、交易数量、交易金额、单位现价、手续费</li>
                       <li>可选包含"基金净值"工作表（基金代码、当前净值）</li>
                     </ul>
                   </div>

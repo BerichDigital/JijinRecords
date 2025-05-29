@@ -62,7 +62,7 @@ export default function FundRecordsPage() {
 			fundCode: '',
 			fundName: '',
 			type: '买入',
-			date: new Date().toISOString().split('T')[0],
+			date: new Date().toISOString().slice(0, 16), // 格式：YYYY-MM-DDTHH:mm
 			price: 0,
 			quantity: 0,
 			amount: 0,
@@ -141,6 +141,19 @@ export default function FundRecordsPage() {
 
 	const formatPercent = (rate: number) => {
 		return `${rate >= 0 ? '+' : ''}${rate.toFixed(2)}%`
+	}
+
+	const formatDateTime = (dateString: string) => {
+		const date = new Date(dateString)
+		return date.toLocaleString('zh-CN', {
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit',
+			hour12: false
+		})
 	}
 
 	return (
@@ -251,9 +264,9 @@ export default function FundRecordsPage() {
 													name="date"
 													render={({ field }) => (
 														<FormItem>
-															<FormLabel>交易日期</FormLabel>
+															<FormLabel>交易时间</FormLabel>
 															<FormControl>
-																<Input type="date" {...field} />
+																<Input type="datetime-local" {...field} />
 															</FormControl>
 															<FormMessage />
 														</FormItem>
@@ -596,7 +609,7 @@ export default function FundRecordsPage() {
 													<Table>
 														<TableHeader>
 															<TableRow>
-																<TableHead>日期</TableHead>
+																<TableHead>交易时间</TableHead>
 																<TableHead>交易类型</TableHead>
 																<TableHead>交易价格</TableHead>
 																<TableHead>交易数量</TableHead>
@@ -610,7 +623,7 @@ export default function FundRecordsPage() {
 																.sort((a: Transaction, b: Transaction) => new Date(b.date).getTime() - new Date(a.date).getTime())
 																.map((transaction: Transaction) => (
 																<TableRow key={transaction.id}>
-																	<TableCell>{transaction.date}</TableCell>
+																	<TableCell>{formatDateTime(transaction.date)}</TableCell>
 																	<TableCell>
 																		<Badge variant={transaction.type === '买入' ? 'default' : 'secondary'}>
 																			{transaction.type}
@@ -728,7 +741,7 @@ export default function FundRecordsPage() {
 																<Table>
 																	<TableHeader>
 																		<TableRow>
-																			<TableHead>日期</TableHead>
+																			<TableHead>交易时间</TableHead>
 																			<TableHead>交易类型</TableHead>
 																			<TableHead>交易价格</TableHead>
 																			<TableHead>交易数量</TableHead>
@@ -742,7 +755,7 @@ export default function FundRecordsPage() {
 																			.sort((a: Transaction, b: Transaction) => new Date(b.date).getTime() - new Date(a.date).getTime())
 																			.map((transaction: Transaction) => (
 																			<TableRow key={transaction.id}>
-																				<TableCell>{transaction.date}</TableCell>
+																				<TableCell>{formatDateTime(transaction.date)}</TableCell>
 																				<TableCell>
 																					<Badge variant={transaction.type === '买入' ? 'default' : 'secondary'}>
 																						{transaction.type}
