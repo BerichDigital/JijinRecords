@@ -53,7 +53,9 @@ export default function FundRecordsPage() {
 	useEffect(() => {
 		setIsHydrated(true)
 		// 手动触发 Zustand persist 的水合
-		useFundStore.persist.rehydrate()
+		if (typeof window !== 'undefined') {
+			useFundStore.persist.rehydrate()
+		}
 	}, [])
 
 	const form = useForm<TransactionFormData>({
